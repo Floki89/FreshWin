@@ -1,0 +1,4 @@
+# Batch files must keep Windows line endings, otherwise cmd.exe can misbehave
+*.bat text eol=crlf
+*.md  text eol=lf
+*.png binary

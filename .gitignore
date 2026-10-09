@@ -1,0 +1,7 @@
+# Log files written by FreshWin
+FreshWin_*.log
+*.log
+
+# Test copies
+*-TEST.bat
+*_TEST.bat
