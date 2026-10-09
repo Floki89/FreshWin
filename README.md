@@ -6,9 +6,10 @@ A graphical setup wizard for fresh Windows 11 installations, in a single `.bat` 
 Pick a browser and your programs, clean up Windows, set the computer name and power
 options, install all updates, and you're done. No installation, no dependencies.
 
-![Browser selection](docs/browser-en.png)
-![Program selection](docs/programs-en.png)
-![Appearance](docs/appearance-en.png)
+| | |
+|---|---|
+| ![Browser selection](docs/browser-en.png) | ![Program selection with profiles](docs/programs-en.png) |
+| ![Clean up Windows](docs/cleanup-en.png) | ![Appearance](docs/appearance-en.png) |
 
 ## Features
 

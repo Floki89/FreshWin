@@ -6,9 +6,10 @@ Ein grafischer Einrichtungsassistent für frisch installierte Windows‑11‑PCs
 Browser und Programme auswählen, Windows aufräumen, Computername und Energieoptionen setzen,
 alle Updates installieren, fertig. Keine Installation, keine Abhängigkeiten.
 
-![Browserauswahl](docs/browser-de.png)
-![Programmauswahl](docs/programs-de.png)
-![Darstellung](docs/appearance-de.png)
+| | |
+|---|---|
+| ![Browserauswahl](docs/browser-de.png) | ![Programmauswahl mit Profilen](docs/programs-de.png) |
+| ![Windows aufräumen](docs/cleanup-de.png) | ![Darstellung](docs/appearance-de.png) |
 
 ## Funktionen
 
