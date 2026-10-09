@@ -30,21 +30,42 @@ options, install all updates, and you're done. No installation, no dependencies.
   shows file extensions, disables Fast Startup
 - **New user profiles** get the same settings (via the default profile)
 - **Basic setup**: rename the computer, display/sleep timeouts for AC and battery
-- **Updates**: `winget upgrade --all` and Windows Update (without drivers)
+- **Updates**: `winget upgrade --all` and Windows Update, optionally including drivers, in up to 3 rounds
 - **Safety net**: creates a restore point before any change, and a summary page shows everything before it starts
-- **Log file** next to the script (or in `%TEMP%`)
+- **Made for fresh PCs**: keeps the PC awake during setup, waits for winget, retries when Windows Update
+  is busy installing, skips hanging installers after 20 minutes, warns about missing internet, battery
+  power or a different admin account, and runs without a console window that could be closed by accident
+- **Log file** next to the script (on the desktop when started via the one-line command)
 - **German and English**, detected automatically and switchable in the window
 - **Test mode**: shows exactly what *would* happen and changes nothing
 
 ## Usage
 
-1. Download [`FreshWin.bat`](FreshWin.bat) (on GitHub: *Raw* → save, or download the repository as ZIP).
+### Option 1: one command, no download (recommended)
+
+1. Right-click the Start button → **Terminal (Admin)**
+2. Paste this line and press Enter:
+
+   ```powershell
+   irm https://raw.githubusercontent.com/Floki89/FreshWin/main/FreshWin.bat | iex
+   ```
+
+No download, no SmartScreen warning. Keep the terminal window open while FreshWin is running.
+Test mode: run `$env:SETUP_ARGS = '/test'` first.
+
+### Option 2: download
+
+1. Download [`FreshWin.bat`](https://github.com/Floki89/FreshWin/releases/latest/download/FreshWin.bat) (always the latest release).
 2. Double-click it and confirm the administrator prompt.
 3. Follow the wizard.
 
-> Windows SmartScreen may warn about a downloaded `.bat` file. Choose *More info → Run anyway*,
-> or right-click the file → *Properties* → *Unblock*. Read the script first if you're unsure:
-> it's plain text.
+> [!NOTE]
+> Edge and Windows SmartScreen may warn about a downloaded `.bat` file. Choose *Keep* in Edge, then
+> *More info → Run anyway*. Read the script first if you're unsure: it's plain text.
+
+### Option 3: USB stick
+
+Copy `FreshWin.bat` to a USB stick and double-click it on the new PC. Handy if you set up several PCs.
 
 ### Options
 
@@ -56,11 +77,12 @@ options, install all updates, and you're done. No installation, no dependencies.
 
 ## Requirements
 
-- Windows 11 (most things also work on Windows 10)
+- Windows 11 (most things also work on Windows 10). **Not in S mode**: leave S mode first
+  (Settings → System → Activation), scripts can't run there
 - Administrator rights (except in test mode)
-- Internet connection
-- winget (*App Installer*). It's preinstalled on current Windows 11. On a very fresh install,
-  update *App Installer* in the Microsoft Store first if FreshWin reports it as missing
+- Internet connection. If the Wi-Fi driver is missing, use a LAN cable or a USB tethered phone
+- winget (*App Installer*) is preinstalled on Windows 11. Right after the first sign-in FreshWin waits up to
+  3 minutes until it is ready and installs a current version if needed
 
 ## Customizing
 

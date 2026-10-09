@@ -16,9 +16,8 @@ if errorlevel 1 (
     exit /b
 )
 :start
-echo FreshWin is running - please keep this window open.
-echo FreshWin laeuft - dieses Fenster bitte nicht schliessen.
-powershell -NoProfile -STA -ExecutionPolicy Bypass -Command "iex ([IO.File]::ReadAllText($env:SETUP_FILE))"
+:: Run without a console window, so nobody can close it by accident and abort the setup
+start "" conhost.exe --headless powershell -NoProfile -STA -ExecutionPolicy Bypass -Command "iex ([IO.File]::ReadAllText($env:SETUP_FILE))"
 exit /b
 #>
 # ================================================================
@@ -26,6 +25,9 @@ exit /b
 #
 #  Options:   FreshWin.bat /test       test mode (dry run)
 #             FreshWin.bat /lang:en    force language (de | en)
+#  Without download, in an elevated Windows PowerShell:
+#             irm https://raw.githubusercontent.com/Floki89/FreshWin/main/FreshWin.bat | iex
+#             (test mode: set $env:SETUP_ARGS = '/test' first)
 #  Test mode: also active if the file name ends in -TEST or _TEST
 #             (e.g. FreshWin-TEST.bat). Nothing is installed,
 #             removed or written to the registry then.
@@ -35,7 +37,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $AppName    = 'FreshWin'
-$AppVersion = '1.2.0'
+$AppVersion = '1.3.0'
 $SetupFile  = $env:SETUP_FILE
 $ArgLine    = [string]$env:SETUP_ARGS
 $DryRun     = ($ArgLine -match '(^|\s)[/-]test(\s|$)') -or
@@ -51,7 +53,25 @@ if ($ArgLine -match '[/-]lang[:=](de|en)\b') { $script:Lang = $Matches[1].ToLowe
 # ================================================================
 $Strings = @{
 de = @{
-    needAdmin      = 'FreshWin braucht Administratorrechte.'
+    needAdmin      = "FreshWin braucht Administratorrechte.`n`nStarte die Datei FreshWin.bat per Doppelklick oder führe den Befehl in einem Terminal (Administrator) aus."
+    consoleHint    = 'FreshWin läuft – dieses Fenster bitte offen lassen.'
+    warnTitle      = 'Bitte beachten:'
+    warnContinue   = 'Trotzdem starten?'
+    warnNoInternet = 'Keine Internetverbindung. Ohne Internet können keine Programme und Updates installiert werden. Fehlt evtl. der WLAN- oder Netzwerktreiber? Ein LAN-Kabel hilft oft.'
+    warnBattery    = 'Der Laptop läuft auf Akku. Bitte das Netzteil anschließen – das Setup kann über eine Stunde dauern.'
+    warnOtherUser  = 'FreshWin läuft mit dem Konto {0}, angemeldet ist aber {1}. Programme, die nur für einen Benutzer installiert werden (z. B. Discord, WhatsApp), und die Darstellungs-Einstellungen landen beim Konto {0}.'
+    drivers        = 'Treiber-Updates einschließen (empfohlen bei frisch installierten PCs)'
+    sumDrivers     = 'inkl. Treiber'
+    logAwake       = 'Energiesparmodus ist während des Setups blockiert.'
+    logWingetWait  = '  winget ist noch nicht bereit – warte bis zu 3 Minuten (normal nach der Ersteinrichtung) …'
+    logWingetVer   = '  winget {0}'
+    logWingetUpd   = '  Aktualisiere den App-Installer (winget) …'
+    logInstallReboot = '  OK – Neustart nötig, um die Installation abzuschließen'
+    logInstallBusy = '  Es läuft gerade eine andere Installation (z. B. Windows Update) – warte 60 Sekunden ({0}/3) …'
+    logInstallTimeout = '  [!] Nach {0} Minuten abgebrochen – der Installer hängt vermutlich. Bitte später von Hand installieren.'
+    logInstallNoAdmin = '  [!] Dieses Programm lässt sich nicht mit Adminrechten installieren – bitte später normal installieren.'
+    logInstallRebootFirst = '  [!] Windows verlangt vorher einen Neustart – nach dem Neustart FreshWin erneut starten.'
+    logRunAgain    = 'Tipp: Nach dem Neustart unter Einstellungen > Windows Update erneut suchen – manche Updates erscheinen erst danach.'
     testBadge      = '  TESTMODUS – es wird nichts verändert  '
     btnCancel      = 'Abbrechen';      btnBack  = '< Zurück';   btnNext   = 'Weiter >'
     btnStart       = 'Jetzt starten';  btnStartTest = 'Test starten'
@@ -119,11 +139,11 @@ de = @{
     timeouts       = '5 Minuten|10 Minuten|15 Minuten|30 Minuten|1 Stunde|2 Stunden|Nie'
     upgrade        = 'Alle installierten Programme aktualisieren (winget upgrade --all)'
     wu             = 'Windows Updates suchen und installieren (kann lange dauern)'
-    baseHint       = 'Achtung: Mit Updates dauert das Setup deutlich länger – je nach PC und Internet 30 Minuten bis über eine Stunde. Die Updates laufen ganz am Ende, Treiber-Updates sind ausgenommen. Im Testmodus wird nur nach Windows Updates gesucht.'
+    baseHint       = 'Achtung: Mit Updates dauert das Setup deutlich länger – je nach PC und Internet 30 Minuten bis über eine Stunde. Die Updates laufen ganz am Ende. Im Testmodus wird nur nach Windows Updates gesucht.'
     summaryTitle   = 'Zusammenfassung'
     runRunning     = 'Setup läuft …'
     runDone        = 'Fertig. Ein Neustart wird empfohlen.'
-    runDoneReboot  = 'Fertig. Ein Neustart ist erforderlich.'
+    runDoneReboot  = 'Fertig. Bitte neu starten – danach unter Windows Update noch einmal nach Updates suchen.'
     runDoneErrors  = 'Fertig mit {0} Problem(en) – siehe Log.'
     msgConfirm     = 'Setup jetzt mit diesen Einstellungen starten?'
     msgInvalidName = "Ungültiger Computername: '{0}'`n`nErlaubt: 1-15 Zeichen, A-Z, 0-9 und Bindestrich (nicht am Anfang/Ende), nicht nur Ziffern."
@@ -164,7 +184,7 @@ de = @{
     errWinget      = 'winget fehlt'
     logInstall     = 'Installiere {0} ({1}) …'
     logSkipInstalled = '  bereits installiert – übersprungen'
-    logInstallErr  = '  [!] Fehler (Exitcode {0}) – Details im Log'
+    logInstallErr  = '  [!] Fehler {0} – Details im Log'
     logBrowser     = 'Standardbrowser: {0} …'
     logXmlTest     = '  [TEST] würde {0} schreiben:'
     logAssocOK     = '  Zuordnung für neue Benutzerprofile hinterlegt'
@@ -200,7 +220,25 @@ de = @{
     logSettingsTest = '[TEST] würde Einstellungen > Standard-Apps öffnen'
 }
 en = @{
-    needAdmin      = 'FreshWin needs administrator rights.'
+    needAdmin      = "FreshWin needs administrator rights.`n`nStart FreshWin.bat by double-clicking it, or run the command in a Terminal (Admin)."
+    consoleHint    = 'FreshWin is running - please keep this window open.'
+    warnTitle      = 'Please note:'
+    warnContinue   = 'Start anyway?'
+    warnNoInternet = 'No internet connection. Programs and updates cannot be installed without internet. Is the Wi-Fi or network driver missing? A LAN cable often helps.'
+    warnBattery    = 'The laptop is running on battery. Please plug in the power adapter – setup can take over an hour.'
+    warnOtherUser  = 'FreshWin is running as {0}, but {1} is signed in. Programs installed per user (e.g. Discord, WhatsApp) and the appearance settings will go to the account {0}.'
+    drivers        = 'Include driver updates (recommended for freshly installed PCs)'
+    sumDrivers     = 'incl. drivers'
+    logAwake       = 'Sleep is blocked while setup is running.'
+    logWingetWait  = '  winget is not ready yet – waiting up to 3 minutes (normal right after first setup) …'
+    logWingetVer   = '  winget {0}'
+    logWingetUpd   = '  Updating App Installer (winget) …'
+    logInstallReboot = '  OK – restart needed to finish the installation'
+    logInstallBusy = '  Another installation is running (e.g. Windows Update) – waiting 60 seconds ({0}/3) …'
+    logInstallTimeout = '  [!] Aborted after {0} minutes – the installer probably hangs. Please install it manually later.'
+    logInstallNoAdmin = '  [!] This program cannot be installed with admin rights – please install it normally later.'
+    logInstallRebootFirst = '  [!] Windows requires a restart first – start FreshWin again after restarting.'
+    logRunAgain    = 'Tip: after restarting, search again under Settings > Windows Update – some updates only show up then.'
     testBadge      = '  TEST MODE – nothing will be changed  '
     btnCancel      = 'Cancel';         btnBack  = '< Back';     btnNext   = 'Next >'
     btnStart       = 'Start now';      btnStartTest = 'Start test'
@@ -268,11 +306,11 @@ en = @{
     timeouts       = '5 minutes|10 minutes|15 minutes|30 minutes|1 hour|2 hours|Never'
     upgrade        = 'Update all installed programs (winget upgrade --all)'
     wu             = 'Search for and install Windows updates (can take a while)'
-    baseHint       = 'Warning: with updates the setup takes considerably longer – depending on the PC and connection 30 minutes to over an hour. Updates run at the very end, driver updates are excluded. In test mode Windows updates are only searched.'
+    baseHint       = 'Warning: with updates the setup takes considerably longer – depending on the PC and connection 30 minutes to over an hour. Updates run at the very end. In test mode Windows updates are only searched.'
     summaryTitle   = 'Summary'
     runRunning     = 'Setup is running …'
     runDone        = 'Done. A restart is recommended.'
-    runDoneReboot  = 'Done. A restart is required.'
+    runDoneReboot  = 'Done. Please restart – then search for updates in Windows Update once more.'
     runDoneErrors  = 'Done with {0} problem(s) – see log.'
     msgConfirm     = 'Start setup with these settings now?'
     msgInvalidName = "Invalid computer name: '{0}'`n`nAllowed: 1-15 characters, A-Z, 0-9 and hyphen (not at start/end), not digits only."
@@ -313,7 +351,7 @@ en = @{
     errWinget      = 'winget missing'
     logInstall     = 'Installing {0} ({1}) …'
     logSkipInstalled = '  already installed – skipped'
-    logInstallErr  = '  [!] Error (exit code {0}) – see log for details'
+    logInstallErr  = '  [!] Error {0} – see log for details'
     logBrowser     = 'Default browser: {0} …'
     logXmlTest     = '  [TEST] would write {0}:'
     logAssocOK     = '  association registered for new user profiles'
@@ -362,13 +400,17 @@ if (-not $DryRun -and -not $IsAdmin) {
     [System.Windows.Forms.MessageBox]::Show((T 'needAdmin'), $AppName, 'OK', 'Error') | Out-Null
     return
 }
+# Started via "irm ... | iex" in a terminal: that window must stay open
+if (-not $SetupFile) { Write-Host (T 'consoleHint') -ForegroundColor Yellow }
 
-# --- Log file next to the script, otherwise in TEMP ---
+# --- Log file next to the script (or on the desktop when started via irm), otherwise in TEMP ---
 $suffix = ''
 if ($DryRun) { $suffix = '_TEST' }
 $logName = '{0}_{1}_{2:yyyyMMdd_HHmm}{3}.log' -f $AppName, $env:COMPUTERNAME, (Get-Date), $suffix
 try {
-    $script:LogFile = [IO.Path]::Combine([IO.Path]::GetDirectoryName($SetupFile), $logName)
+    $logDir = [Environment]::GetFolderPath('Desktop')
+    if ($SetupFile) { $logDir = [IO.Path]::GetDirectoryName($SetupFile) }
+    $script:LogFile = [IO.Path]::Combine($logDir, $logName)
     Add-Content -LiteralPath $script:LogFile -Value "$AppName $AppVersion - $(Get-Date)" -Encoding UTF8 -ErrorAction Stop }
 catch {
     $script:LogFile = Join-Path $env:TEMP $logName
@@ -565,6 +607,38 @@ function Log([string]$msg) {
     }
 }
 
+# Keep the PC awake while setup is running (a fresh Windows goes to sleep after a few minutes)
+try {
+    Add-Type -Namespace FreshWin -Name Power -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint esFlags);'
+} catch {}
+function Set-KeepAwake([bool]$on) {
+    # ES_CONTINUOUS | ES_SYSTEM_REQUIRED, or ES_CONTINUOUS alone to release
+    $flags = [uint32]2147483648; if ($on) { $flags = [uint32]2147483649 }
+    try { [void][FreshWin.Power]::SetThreadExecutionState($flags) } catch {}
+}
+
+# Wait without freezing the window
+function Wait-UI([int]$Seconds) {
+    $until = (Get-Date).AddSeconds($Seconds)
+    while ((Get-Date) -lt $until) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 200 }
+}
+
+# Problems worth a warning before the setup starts
+function Get-Warnings {
+    $w = @()
+    $form.Cursor = 'WaitCursor'
+    try {
+        $r = Invoke-WebRequest -Uri 'http://www.msftconnecttest.com/connecttest.txt' -UseBasicParsing -TimeoutSec 8
+        if ($r.Content -notmatch 'Microsoft Connect Test') { $w += T 'warnNoInternet' }
+    } catch { $w += T 'warnNoInternet' }
+    $form.Cursor = 'Default'
+    if ([System.Windows.Forms.SystemInformation]::PowerStatus.PowerLineStatus -eq 'Offline') { $w += T 'warnBattery' }
+    $console = (Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue).UserName
+    $me = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+    if ($console -and $console -ne $me) { $w += T 'warnOtherUser' $me $console }
+    return ,$w
+}
+
 function Get-AppId($a) {
     if ($script:Lang -eq 'de' -and $a.IdDe) { return $a.IdDe }
     return $a.Id
@@ -572,7 +646,9 @@ function Get-AppId($a) {
 
 # Start an external program without freezing the UI.
 # -Always: run in test mode as well (read-only commands only).
-function Run-Proc([string]$File, [string]$Arguments, [switch]$Always) {
+# -TimeoutMin: kill the process tree after that many minutes ($script:TimedOut is set, returns -1).
+function Run-Proc([string]$File, [string]$Arguments, [switch]$Always, [int]$TimeoutMin = 0) {
+    $script:TimedOut = $false
     if ($DryRun -and -not $Always) {
         Log (T 'logWould' $File $Arguments)
         Start-Sleep -Milliseconds 120
@@ -586,9 +662,15 @@ function Run-Proc([string]$File, [string]$Arguments, [switch]$Always) {
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow  = $true
     $p = [System.Diagnostics.Process]::Start($psi)
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
     while (-not $p.HasExited) {
         [System.Windows.Forms.Application]::DoEvents()
         Start-Sleep -Milliseconds 100
+        if ($TimeoutMin -gt 0 -and $sw.Elapsed.TotalMinutes -ge $TimeoutMin) {
+            & taskkill.exe /PID $p.Id /T /F 2>&1 | Out-Null
+            $script:TimedOut = $true
+            break
+        }
     }
     try {
         # Output is UTF-8 (winget) or OEM code page (dism, reg, powershell), depending on the program
@@ -599,7 +681,39 @@ function Run-Proc([string]$File, [string]$Arguments, [switch]$Always) {
         if ($out) { Add-Content -LiteralPath $script:LogFile -Value $out -Encoding UTF8 }
         Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
     } catch {}
+    if ($script:TimedOut) { return -1 }
     return $p.ExitCode
+}
+
+# Install one program with winget. Handles the typical situations on a fresh PC:
+# reboot required, another installation running (Windows Update), hanging installers.
+$InstallTimeoutMin = 20
+function Install-App($a) {
+    $id = Get-AppId $a
+    Log (T 'logInstall' $a.Name $id)
+    $chk = Run-Proc 'winget' "list --id $id -e --accept-source-agreements" -Always
+    if ($chk -eq 0) { Log (T 'logSkipInstalled'); return }
+    $src = ''; if ($a.Source) { $src = " --source $($a.Source)" }
+    for ($try = 1; $try -le 3; $try++) {
+        $rc = Run-Proc 'winget' "install --id $id -e$src --silent --accept-package-agreements --accept-source-agreements --disable-interactivity" -TimeoutMin $InstallTimeoutMin
+        if ($rc -eq 0) { if (-not $DryRun) { Log '  OK' }; return }
+        if ($script:TimedOut) { Log (T 'logInstallTimeout' $InstallTimeoutMin); break }
+        $hex = '0x{0:X8}' -f $rc
+        switch ($hex) {
+            '0x8A150109' { Log (T 'logInstallReboot'); $script:RebootNeeded = $true; return }   # reboot required to finish
+            '0x8A150061' { Log (T 'logSkipInstalled'); return }                                 # already installed
+        }
+        if ($hex -eq '0x8A150102' -and $try -lt 3) { Log (T 'logInstallBusy' $try); Wait-UI 60; continue }  # another install running
+        if ($hex -eq '0x8A150056') { Log (T 'logInstallNoAdmin') }                                         # refuses admin context
+        elseif ($hex -eq '0x8A15010A') { Log (T 'logInstallRebootFirst'); $script:RebootNeeded = $true }   # reboot required first
+        else { Log (T 'logInstallErr' $hex) }
+        break
+    }
+    [void]$script:Errors.Add($a.Name)
+}
+
+function Test-Winget {
+    return [bool](Get-Command winget -ErrorAction SilentlyContinue)
 }
 
 function Set-Reg([string]$Path, [string]$Name, [int]$Value) {
@@ -935,8 +1049,12 @@ $chkUpgrade.Location = New-Object System.Drawing.Point(12, 250)
 $chkWU = L (New-Object System.Windows.Forms.CheckBox) 'wu'
 $chkWU.Checked = $true; $chkWU.AutoSize = $true
 $chkWU.Location = New-Object System.Drawing.Point(12, 282)
-$pBase.Controls.AddRange(@($chkUpgrade, $chkWU))
-$lblBaseHint = New-Label $pBase 'baseHint' 320
+$chkDrivers = L (New-Object System.Windows.Forms.CheckBox) 'drivers'
+$chkDrivers.Checked = $true; $chkDrivers.AutoSize = $true
+$chkDrivers.Location = New-Object System.Drawing.Point(32, 312)
+$chkWU.Add_CheckedChanged({ $chkDrivers.Enabled = $chkWU.Checked })
+$pBase.Controls.AddRange(@($chkUpgrade, $chkWU, $chkDrivers))
+$lblBaseHint = New-Label $pBase 'baseHint' 350
 $lblBaseHint.ForeColor = [System.Drawing.Color]::FromArgb(200, 40, 40)
 
 # --- Page 6: summary ---
@@ -1001,6 +1119,7 @@ function Get-Selection {
     }
     $sel.Upgrade  = $chkUpgrade.Checked
     $sel.WU       = $chkWU.Checked
+    $sel.Drivers  = $chkWU.Checked -and $chkDrivers.Checked
     $sel.Look     = @{ Theme = $cbTheme.SelectedIndex; Align = $cbAlign.SelectedIndex; Search = $cbSearch.SelectedIndex }
     foreach ($k in $LookChecks) { $sel.Look[$k] = $lookChk[$k].Checked }
     $sel.LookAny  = @($sel.Look.Values | Where-Object { $_ }).Count -gt 0
@@ -1042,7 +1161,9 @@ function Build-Summary {
         $t += '  {0,-15} {1}' -f (T 'sumPowerDC'), (T 'sumPowerFmt' $cbMonDC.SelectedItem $cbSlpDC.SelectedItem) + $nl
     } else { $t += '  {0,-15} {1}' -f (T 'sumPower'), (T 'sumUnchanged') + $nl }
     $mark = '[ ]'; if ($s.Upgrade) { $mark = '[x]' }; $t += "  $mark $(T 'sumUpgrade')" + $nl
-    $mark = '[ ]'; if ($s.WU)      { $mark = '[x]' }; $t += "  $mark $(T 'sumWU')" + $nl
+    $mark = '[ ]'; if ($s.WU)      { $mark = '[x]' }; $t += "  $mark $(T 'sumWU')"
+    if ($s.Drivers) { $t += " ($(T 'sumDrivers'))" }
+    $t += $nl
     $t += $nl + (T 'sumNote')
     return $t
 }
@@ -1083,6 +1204,9 @@ function Invoke-Setup {
     $mode = ''; if ($DryRun) { $mode = T 'logTestMode' }
     Log "===== $AppName $AppVersion $mode ====="
     Log (T 'logUser' "$env:USERDOMAIN\$env:USERNAME" $IsAdmin $script:LogFile)
+    $script:RebootNeeded = $false
+    Set-KeepAwake $true
+    Log (T 'logAwake')
 
     # 1) Restore point
     if ($o.Restore) {
@@ -1109,14 +1233,36 @@ function Invoke-Setup {
     $wingetOk = $true
     if ($allApps.Count -gt 0) {
         Log (T 'logWinget')
-        if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        if (-not (Test-Winget)) {
             if ($DryRun) { Log (T 'logWingetTest') }
             else {
-                try { Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe -ErrorAction Stop } catch {}
-                Start-Sleep 3
+                # Right after the first sign-in App Installer registers itself in the background
+                Log (T 'logWingetWait')
+                $sw = [System.Diagnostics.Stopwatch]::StartNew()
+                while (-not (Test-Winget) -and $sw.Elapsed.TotalMinutes -lt 3) {
+                    try { Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe -ErrorAction Stop } catch {}
+                    Wait-UI 10
+                }
             }
         }
-        if (Get-Command winget -ErrorAction SilentlyContinue) {
+        # Missing or too old (no --disable-interactivity etc.): install the current App Installer
+        $wgVer = [version]'0.0'
+        if (Test-Winget) {
+            Run-Proc 'winget' '--version' -Always | Out-Null
+            if ($script:LastOutput -match 'v?(\d+\.\d+)') { $wgVer = [version]$Matches[1] }
+            Log (T 'logWingetVer' $wgVer)
+        }
+        if ($wgVer -lt [version]'1.6' -and -not $DryRun) {
+            Log (T 'logWingetUpd')
+            $pkg = Join-Path $env:TEMP 'AppInstaller.msixbundle'
+            $rc = Run-Proc 'curl.exe' "-L -f -s -S --max-time 600 -o `"$pkg`" https://aka.ms/getwinget" -TimeoutMin 12
+            if ($rc -eq 0) {
+                try { Add-AppxPackage -Path $pkg -ForceApplicationShutdown -ErrorAction Stop } catch { Log "  [!] $($_.Exception.Message)" }
+                Wait-UI 5
+            }
+            Remove-Item -LiteralPath $pkg -Force -ErrorAction SilentlyContinue
+        }
+        if (Test-Winget) {
             Log '  OK'
             Run-Proc 'winget' 'source update' | Out-Null
         } else {
@@ -1130,19 +1276,7 @@ function Invoke-Setup {
 
     # 3) Programs
     foreach ($a in $allApps) {
-        if ($wingetOk) {
-            $id = Get-AppId $a
-            Log (T 'logInstall' $a.Name $id)
-            $chk = Run-Proc 'winget' "list --id $id -e --accept-source-agreements" -Always
-            if ($chk -eq 0) {
-                Log (T 'logSkipInstalled')
-            } else {
-                $src = ''; if ($a.Source) { $src = " --source $($a.Source)" }
-                $rc = Run-Proc 'winget' "install --id $id -e$src --silent --accept-package-agreements --accept-source-agreements --disable-interactivity"
-                if ($rc -eq 0) { if (-not $DryRun) { Log '  OK' } }
-                else { Log (T 'logInstallErr' $rc); [void]$script:Errors.Add($a.Name) }
-            }
-        }
+        if ($wingetOk) { Install-App $a }
         Step
     }
 
@@ -1278,31 +1412,37 @@ function Invoke-Setup {
             Log (T 'logUpgradeTest')
         } else {
             Log (T 'logUpgrade')
-            $rc = Run-Proc 'winget' 'upgrade --all --silent --accept-package-agreements --accept-source-agreements --disable-interactivity'
+            $rc = Run-Proc 'winget' 'upgrade --all --silent --accept-package-agreements --accept-source-agreements --disable-interactivity' -TimeoutMin 60
             if ($rc -eq 0) { Log '  OK' } else { Log (T 'logUpgradeErr' $rc) }
         }
     }
     Step
 
     # 10) Windows Update
-    $script:RebootNeeded = $false
     if ($s.WU) {
         $searchOnly = '$false'; if ($DryRun) { $searchOnly = '$true' }
+        $criteria = "IsInstalled=0 and Type='Software' and IsHidden=0"
+        if ($s.Drivers) { $criteria = 'IsInstalled=0 and IsHidden=0' }
+        # Up to 3 rounds: some updates only show up after others are installed
         $wu = @"
 `$ErrorActionPreference = 'Stop'
 try {
     `$ses = New-Object -ComObject Microsoft.Update.Session
     `$ses.ClientApplicationID = '$AppName'
-    `$res = `$ses.CreateUpdateSearcher().Search("IsInstalled=0 and Type='Software' and IsHidden=0")
-    "UPDATES=" + `$res.Updates.Count
-    foreach (`$u in `$res.Updates) { "  - " + `$u.Title }
-    if (`$res.Updates.Count -eq 0 -or $searchOnly) { exit 0 }
-    `$col = New-Object -ComObject Microsoft.Update.UpdateColl
-    foreach (`$u in `$res.Updates) { if (-not `$u.EulaAccepted) { `$u.AcceptEula() }; [void]`$col.Add(`$u) }
-    `$dl = `$ses.CreateUpdateDownloader(); `$dl.Updates = `$col; [void]`$dl.Download()
-    `$ins = `$ses.CreateUpdateInstaller(); `$ins.Updates = `$col; `$r = `$ins.Install()
-    "RESULT=" + `$r.ResultCode + " REBOOT=" + `$r.RebootRequired
-    if (`$r.ResultCode -in 2,3) { exit 0 } else { exit 2 }
+    for (`$round = 1; `$round -le 3; `$round++) {
+        `$res = `$ses.CreateUpdateSearcher().Search("$criteria")
+        "UPDATES=" + `$res.Updates.Count
+        foreach (`$u in `$res.Updates) { "  - " + `$u.Title }
+        if (`$res.Updates.Count -eq 0 -or $searchOnly) { exit 0 }
+        `$col = New-Object -ComObject Microsoft.Update.UpdateColl
+        foreach (`$u in `$res.Updates) { if (-not `$u.EulaAccepted) { `$u.AcceptEula() }; [void]`$col.Add(`$u) }
+        `$dl = `$ses.CreateUpdateDownloader(); `$dl.Updates = `$col; [void]`$dl.Download()
+        `$ins = `$ses.CreateUpdateInstaller(); `$ins.Updates = `$col; `$r = `$ins.Install()
+        "RESULT=" + `$r.ResultCode + " REBOOT=" + `$r.RebootRequired
+        if (`$r.ResultCode -notin 2,3) { exit 2 }
+        if (`$r.RebootRequired) { exit 0 }   # further updates only show up after the restart
+    }
+    exit 0
 } catch { "ERROR: " + `$_.Exception.Message; exit 1 }
 "@
         $b64 = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($wu))
@@ -1312,7 +1452,8 @@ try {
             if ($l -match '^(UPDATES=|  - |RESULT=|ERROR)') { Log "  $l" }
             if ($l -match 'REBOOT=True') { $script:RebootNeeded = $true }
         }
-        if ($rc -eq 0 -and $script:LastOutput -match 'UPDATES=0') { Log (T 'logWUNone') }
+        $first = @($script:LastOutput -split "`r?`n" | Where-Object { $_ -like 'UPDATES=*' })[0]
+        if ($rc -eq 0 -and $first -eq 'UPDATES=0') { Log (T 'logWUNone') }
         elseif ($DryRun -and $rc -eq 0) { Log (T 'logWUTest') }
         elseif ($rc -ne 0) { Log (T 'logWUErr' $rc); [void]$script:Errors.Add((T 'errWU')) }
     }
@@ -1330,7 +1471,9 @@ try {
         if ($script:RebootNeeded -or $s.NewName) { $lblRun.Text = T 'runDoneReboot' }
         $lblRun.ForeColor = [System.Drawing.Color]::FromArgb(0, 120, 60)
     }
+    if ($script:RebootNeeded) { Log (T 'logRunAgain') }
     Log (T 'logFile' $script:LogFile)
+    Set-KeepAwake $false
 
     if ($s.LookAny -or $o.Explorer -or $o.Ads) {
         Log (T 'logExplorer')
@@ -1374,7 +1517,12 @@ $btnNext.Add_Click({
             Show-Page $PgSummary
         }
         $PgSummary {
-            if (-not $DryRun) {
+            $warn = Get-Warnings
+            if ($warn.Count -gt 0) {
+                $msg = (T 'warnTitle') + "`n`n- " + ($warn -join "`n`n- ") + "`n`n" + (T 'warnContinue')
+                $r = [System.Windows.Forms.MessageBox]::Show($msg, $AppName, 'YesNo', 'Warning')
+                if ($r -ne 'Yes') { return }
+            } elseif (-not $DryRun) {
                 $r = [System.Windows.Forms.MessageBox]::Show((T 'msgConfirm'), $AppName, 'YesNo', 'Question')
                 if ($r -ne 'Yes') { return }
             }

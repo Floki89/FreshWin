@@ -1,4 +1,5 @@
-# Batch files must keep Windows line endings, otherwise cmd.exe can misbehave
-*.bat text eol=crlf
+# Batch files are stored as-is with Windows line endings (CRLF), so raw downloads
+# from GitHub and "irm | iex" get a file cmd.exe can run safely
+*.bat -text
 *.md  text eol=lf
 *.png binary
