@@ -66,7 +66,7 @@ de = @{
     browserQuestion = 'Welcher Browser soll installiert werden?'
     browserEdge    = 'Microsoft Edge (vorinstalliert, nichts ändern)'
     browserDefault = 'Als Standardbrowser festlegen'
-    browserHint    = 'Hinweis: Windows 11 lässt den Standardbrowser für den angemeldeten Benutzer nicht per Skript setzen. FreshWin hinterlegt die Zuordnung (wo möglich) für neue Benutzerprofile und öffnet am Ende die Standard-Apps-Einstellungen zur Bestätigung.'
+    browserHint    = 'Hinweis: Den Standardbrowser muss man bei Windows 11 immer selbst bestätigen. Am Ende öffnet sich dafür automatisch die Seite „Standard-Apps“ – dort einfach den gewählten Browser auswählen.'
     appsQuestion   = 'Welche Programme sollen installiert werden?'
     catRuntimes    = 'Laufzeitumgebungen'
     catOffice      = 'Büro & PDF'
@@ -80,7 +80,7 @@ de = @{
     catGames       = 'Gaming – Launcher'
     catGameTools   = 'Gaming – Voice & Tools'
     optsTitle      = 'Windows aufräumen und einstellen'
-    optRestore     = 'Wiederherstellungspunkt erstellen (vor allen Änderungen)'
+    optRestore     = 'Wiederherstellungspunkt erstellen (vor allen Änderungen, dauert einige Minuten)'
     optAppx        = 'Vorinstallierte Consumer-Apps entfernen (Xbox, Bing News, Solitaire, Clipchamp …)'
     optAds         = 'Werbung, App-Vorschläge und Bing-Suche im Startmenü abschalten'
     optTelemetry   = 'Telemetrie auf Minimum, Werbe-ID aus'
@@ -92,6 +92,7 @@ de = @{
     baseTitle      = 'Grundeinrichtung'
     rename         = 'Computer umbenennen:'
     renameHint     = 'max. 15 Zeichen: A-Z, 0-9, Bindestrich. Wird nach dem Neustart aktiv.'
+    currentName    = 'aktuell: {0}'
     power          = 'Energieeinstellungen setzen'
     monitorOff     = 'Bildschirm aus nach'
     standby        = 'Energiesparmodus nach'
@@ -100,7 +101,7 @@ de = @{
     timeouts       = '5 Minuten|10 Minuten|15 Minuten|30 Minuten|1 Stunde|2 Stunden|Nie'
     upgrade        = 'Alle installierten Programme aktualisieren (winget upgrade --all)'
     wu             = 'Windows Updates suchen und installieren (kann lange dauern)'
-    baseHint       = 'Updates laufen ganz am Ende. Treiber-Updates sind ausgenommen. Im Testmodus wird nur nach Windows Updates gesucht und die Liste angezeigt.'
+    baseHint       = 'Achtung: Mit Updates dauert das Setup deutlich länger – je nach PC und Internet 30 Minuten bis über eine Stunde. Die Updates laufen ganz am Ende, Treiber-Updates sind ausgenommen. Im Testmodus wird nur nach Windows Updates gesucht.'
     summaryTitle   = 'Zusammenfassung'
     runRunning     = 'Setup läuft …'
     runDone        = 'Fertig. Ein Neustart wird empfohlen.'
@@ -193,7 +194,7 @@ en = @{
     browserQuestion = 'Which browser should be installed?'
     browserEdge    = 'Microsoft Edge (preinstalled, change nothing)'
     browserDefault = 'Set as default browser'
-    browserHint    = 'Note: Windows 11 does not allow scripts to set the default browser for the signed-in user. FreshWin registers the association (where possible) for new user profiles and opens the Default apps settings at the end so you can confirm it.'
+    browserHint    = 'Note: Windows 11 always asks you to confirm the default browser yourself. At the end, the "Default apps" settings page opens automatically – just pick the chosen browser there.'
     appsQuestion   = 'Which programs should be installed?'
     catRuntimes    = 'Runtimes'
     catOffice      = 'Office & PDF'
@@ -207,7 +208,7 @@ en = @{
     catGames       = 'Gaming – launchers'
     catGameTools   = 'Gaming – voice & tools'
     optsTitle      = 'Clean up and configure Windows'
-    optRestore     = 'Create a restore point (before any changes)'
+    optRestore     = 'Create a restore point (before any changes, takes a few minutes)'
     optAppx        = 'Remove preinstalled consumer apps (Xbox, Bing News, Solitaire, Clipchamp …)'
     optAds         = 'Turn off ads, app suggestions and Bing search in the Start menu'
     optTelemetry   = 'Telemetry to minimum, advertising ID off'
@@ -219,6 +220,7 @@ en = @{
     baseTitle      = 'Basic setup'
     rename         = 'Rename computer:'
     renameHint     = 'max. 15 characters: A-Z, 0-9, hyphen. Takes effect after restart.'
+    currentName    = 'current: {0}'
     power          = 'Configure power settings'
     monitorOff     = 'Turn off display after'
     standby        = 'Sleep after'
@@ -227,7 +229,7 @@ en = @{
     timeouts       = '5 minutes|10 minutes|15 minutes|30 minutes|1 hour|2 hours|Never'
     upgrade        = 'Update all installed programs (winget upgrade --all)'
     wu             = 'Search for and install Windows updates (can take a while)'
-    baseHint       = 'Updates run at the very end. Driver updates are excluded. In test mode Windows updates are only searched and listed.'
+    baseHint       = 'Warning: with updates the setup takes considerably longer – depending on the PC and connection 30 minutes to over an hour. Updates run at the very end, driver updates are excluded. In test mode Windows updates are only searched.'
     summaryTitle   = 'Summary'
     runRunning     = 'Setup is running …'
     runDone        = 'Done. A restart is recommended.'
@@ -747,6 +749,10 @@ $chkRename.Add_CheckedChanged({ $txtName.Enabled = $chkRename.Checked })
 $pBase.Controls.AddRange(@($chkRename, $txtName))
 $lblNameHint = New-Label $pBase 'renameHint' 68
 $lblNameHint.ForeColor = 'Gray'; $lblNameHint.Left = 30
+$lblCurName = New-Object System.Windows.Forms.Label
+$lblCurName.AutoSize = $true; $lblCurName.ForeColor = 'Gray'
+$lblCurName.Location = New-Object System.Drawing.Point(420, 41)
+$pBase.Controls.Add($lblCurName)
 
 $chkPower = L (New-Object System.Windows.Forms.CheckBox) 'power'
 $chkPower.Checked = $true; $chkPower.AutoSize = $true
@@ -786,7 +792,8 @@ $chkWU = L (New-Object System.Windows.Forms.CheckBox) 'wu'
 $chkWU.Checked = $true; $chkWU.AutoSize = $true
 $chkWU.Location = New-Object System.Drawing.Point(12, 282)
 $pBase.Controls.AddRange(@($chkUpgrade, $chkWU))
-New-Label $pBase 'baseHint' 320 | Out-Null
+$lblBaseHint = New-Label $pBase 'baseHint' 320
+$lblBaseHint.ForeColor = [System.Drawing.Color]::FromArgb(200, 40, 40)
 
 # --- Page 5: summary ---
 $pSummary = New-Page
@@ -888,6 +895,7 @@ function Apply-Language {
     foreach ($e in $script:LocCtl) { Set-Text $e.Ctl (T $e.Key) }
     foreach ($l in $infoLabels) { if ($script:Lang -eq 'de') { Set-Text $l $l.Tag.De } else { Set-Text $l $l.Tag.En } }
     foreach ($cb in $timeoutBoxes) { Fill-TimeoutBox $cb }
+    $lblCurName.Text = T 'currentName' $env:COMPUTERNAME
     if ($script:page -lt 5) { Show-Page $script:page }
 }
 
