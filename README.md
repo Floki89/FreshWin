@@ -8,6 +8,7 @@ options, install all updates, and you're done. No installation, no dependencies.
 
 ![Browser selection](docs/browser-en.png)
 ![Program selection](docs/programs-en.png)
+![Appearance](docs/appearance-en.png)
 
 ## Features
 
@@ -18,6 +19,11 @@ options, install all updates, and you're done. No installation, no dependencies.
 - **Gaming**: Steam, Epic, Ubisoft Connect, EA app, Battle.net, GOG, Rockstar, Amazon Games, Xbox app,
   Discord, TeamSpeak, Mumble, NVIDIA App, MSI Afterburner, peripheral software and more.
   Selecting the Xbox app keeps the Xbox components when Windows is cleaned up
+- **Profiles**: *Gaming PC* and *Office PC* check suitable programs with one click and preset
+  the appearance page (the NVIDIA App is only added if an NVIDIA graphics card is present)
+- **Appearance**: dark/light mode, taskbar alignment and search, classic right-click menu,
+  show hidden files, hide Copilot button, "End task" in the taskbar, Num Lock at startup,
+  mouse acceleration off, Sticky Keys prompt off
 - **Clean up Windows**: removes preinstalled consumer apps (Xbox, Bing News, Solitaire, Clipchamp …),
   turns off ads, suggestions, Bing search in Start and widgets, sets telemetry to minimum,
   shows file extensions, disables Fast Startup
@@ -63,6 +69,7 @@ All lists are at the top of the PowerShell part of `FreshWin.bat`:
 - `$AppCatalog` lists programs by category. `Id` is the winget ID (find one with `winget search <name>`;
   `Source = 'msstore'` for Microsoft Store apps),
   `Def = $true` pre-checks the program, `De`/`En` hold the short descriptions
+- `$Profiles` defines the profiles (winget IDs plus appearance defaults)
 - `$AppxRemove` lists the preinstalled apps that get removed
 - `$Strings` holds all texts (German and English)
 

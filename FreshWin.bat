@@ -35,7 +35,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $AppName    = 'FreshWin'
-$AppVersion = '1.1.0'
+$AppVersion = '1.2.0'
 $SetupFile  = $env:SETUP_FILE
 $ArgLine    = [string]$env:SETUP_ARGS
 $DryRun     = ($ArgLine -match '(^|\s)[/-]test(\s|$)') -or
@@ -57,11 +57,29 @@ de = @{
     btnStart       = 'Jetzt starten';  btnStartTest = 'Test starten'
     btnClose       = 'Schließen';      btnReboot = 'Neu starten'
     btnAll         = 'Alle';           btnNone   = 'Keine'
-    step1          = 'Schritt 1 von 5: Browser'
-    step2          = 'Schritt 2 von 5: Programme'
-    step3          = 'Schritt 3 von 5: Windows aufräumen'
-    step4          = 'Schritt 4 von 5: Grundeinrichtung'
-    step5          = 'Schritt 5 von 5: Zusammenfassung'
+    profLabel      = 'Profil:'
+    profStandard   = 'Standard';       profGaming = 'Gaming-PC';  profOffice = 'Büro-PC'
+    step1          = 'Schritt 1 von 6: Browser'
+    step2          = 'Schritt 2 von 6: Programme'
+    step3          = 'Schritt 3 von 6: Windows aufräumen'
+    step4          = 'Schritt 4 von 6: Darstellung'
+    step5          = 'Schritt 5 von 6: Grundeinrichtung'
+    step6          = 'Schritt 6 von 6: Zusammenfassung'
+    lookTitle      = 'Darstellung und Bedienung'
+    lookTheme      = 'Farbmodus:'
+    lookAlign      = 'Taskleiste ausrichten:'
+    lookSearch     = 'Suche in der Taskleiste:'
+    themeItems     = 'unverändert|Dunkel|Hell'
+    alignItems     = 'unverändert|Mitte|Links'
+    searchItems    = 'unverändert|ausblenden|nur Symbol|Suchfeld'
+    lookContext    = 'Klassisches Rechtsklick-Menü (ohne Umweg über „Weitere Optionen“)'
+    lookHidden     = 'Versteckte Dateien und Ordner anzeigen'
+    lookCopilot    = 'Copilot-Schaltfläche in der Taskleiste ausblenden'
+    lookEndTask    = '„Task beenden“ im Rechtsklick-Menü der Taskleiste'
+    lookNumLock    = 'NumLock beim Start einschalten'
+    lookMouse      = 'Mausbeschleunigung aus (präziseres Zielen in Spielen)'
+    lookSticky     = 'Einrastfunktion-Abfrage (5× Umschalt) und ähnliche Abfragen abschalten'
+    lookHint       = 'Der Explorer wird am Ende kurz neu gestartet. Maus- und Tastatureinstellungen wirken nach der nächsten Anmeldung. Die Profile auf der Programmseite setzen hier passende Vorgaben.'
     stepRun        = 'Ausführung'
     browserQuestion = 'Welcher Browser soll installiert werden?'
     browserEdge    = 'Microsoft Edge (vorinstalliert, nichts ändern)'
@@ -122,6 +140,9 @@ de = @{
     sumNone        = '(keine)'
     sumWindows     = 'WINDOWS'
     sumBase        = 'GRUNDEINRICHTUNG'
+    sumLook        = 'DARSTELLUNG'
+    logLook        = 'Darstellung …'
+    logExplorer    = 'Starte Explorer neu …'
     sumName        = 'Computername:'
     sumUnchanged   = 'unverändert'
     sumPowerAC     = 'Energie Netz:'
@@ -185,11 +206,29 @@ en = @{
     btnStart       = 'Start now';      btnStartTest = 'Start test'
     btnClose       = 'Close';          btnReboot = 'Restart'
     btnAll         = 'All';            btnNone   = 'None'
-    step1          = 'Step 1 of 5: Browser'
-    step2          = 'Step 2 of 5: Programs'
-    step3          = 'Step 3 of 5: Clean up Windows'
-    step4          = 'Step 4 of 5: Basic setup'
-    step5          = 'Step 5 of 5: Summary'
+    profLabel      = 'Profile:'
+    profStandard   = 'Standard';       profGaming = 'Gaming PC';  profOffice = 'Office PC'
+    step1          = 'Step 1 of 6: Browser'
+    step2          = 'Step 2 of 6: Programs'
+    step3          = 'Step 3 of 6: Clean up Windows'
+    step4          = 'Step 4 of 6: Appearance'
+    step5          = 'Step 5 of 6: Basic setup'
+    step6          = 'Step 6 of 6: Summary'
+    lookTitle      = 'Appearance and behavior'
+    lookTheme      = 'Color mode:'
+    lookAlign      = 'Taskbar alignment:'
+    lookSearch     = 'Search in the taskbar:'
+    themeItems     = 'unchanged|Dark|Light'
+    alignItems     = 'unchanged|Center|Left'
+    searchItems    = 'unchanged|hide|icon only|search box'
+    lookContext    = 'Classic right-click menu (no detour via "Show more options")'
+    lookHidden     = 'Show hidden files and folders'
+    lookCopilot    = 'Hide the Copilot button in the taskbar'
+    lookEndTask    = '"End task" in the taskbar right-click menu'
+    lookNumLock    = 'Turn on Num Lock at startup'
+    lookMouse      = 'Mouse acceleration off (more precise aiming in games)'
+    lookSticky     = 'Turn off the Sticky Keys prompt (5x Shift) and similar prompts'
+    lookHint       = 'Explorer is restarted briefly at the end. Mouse and keyboard settings take effect after the next sign-in. The profiles on the programs page set suitable defaults here.'
     stepRun        = 'Running'
     browserQuestion = 'Which browser should be installed?'
     browserEdge    = 'Microsoft Edge (preinstalled, change nothing)'
@@ -250,6 +289,9 @@ en = @{
     sumNone        = '(none)'
     sumWindows     = 'WINDOWS'
     sumBase        = 'BASIC SETUP'
+    sumLook        = 'APPEARANCE'
+    logLook        = 'Appearance …'
+    logExplorer    = 'Restarting Explorer …'
     sumName        = 'Computer name:'
     sumUnchanged   = 'unchanged'
     sumPowerAC     = 'Power (AC):'
@@ -481,6 +523,30 @@ $Options = @(
 
 $TimeoutMinutes = @(5, 10, 15, 30, 60, 120, 0)
 
+$LookChecks = @('Context', 'Hidden', 'Copilot', 'EndTask', 'NumLock', 'Mouse', 'Sticky')
+
+# Profiles: winget IDs to check on the programs page, and defaults for the appearance page.
+# Standard = the Def flags in $AppCatalog.
+$HasNvidia = [bool](Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'NVIDIA' })
+$BaseApps  = @('Microsoft.VCRedist.2015+.x64', 'Microsoft.VCRedist.2015+.x86', 'Microsoft.DotNet.DesktopRuntime.8',
+               'Microsoft.DotNet.DesktopRuntime.10', '7zip.7zip', 'VideoLAN.VLC')
+$Profiles = [ordered]@{
+    profStandard = @{ Apps = $null; Look = @{} }
+    profGaming   = @{
+        Apps = $BaseApps + @('Microsoft.DirectX', 'Discord.Discord', 'Valve.Steam', 'EpicGames.EpicGamesLauncher',
+                             'Ubisoft.Connect', 'ElectronicArts.EADesktop', 'Blizzard.BattleNet', 'GOG.Galaxy',
+                             '9MV0B5HZVK9Z', 'Guru3D.Afterburner', 'REALiX.HWiNFO')
+        Look = @{ Theme = 1; Mouse = $true; Sticky = $true; EndTask = $true }
+    }
+    profOffice   = @{
+        Apps = $BaseApps + @('Notepad++.Notepad++', 'TheDocumentFoundation.LibreOffice', 'Adobe.Acrobat.Reader.64-bit',
+                             'geeksoftwareGmbH.PDF24Creator', 'Mozilla.Thunderbird', 'Microsoft.Teams', 'Zoom.Zoom',
+                             'Greenshot.Greenshot')
+        Look = @{ Context = $true; NumLock = $true }
+    }
+}
+if ($HasNvidia) { $Profiles.profGaming.Apps += 'XP8CLZL93F5Z4P' }   # NVIDIA App only with an NVIDIA GPU
+
 # ================================================================
 #  Helpers
 # ================================================================
@@ -543,6 +609,45 @@ function Set-Reg([string]$Path, [string]$Name, [int]$Value) {
         New-ItemProperty -LiteralPath $Path -Name $Name -Value $Value -PropertyType DWord -Force | Out-Null
     } catch {
         Log "  [!] $Path\$Name : $($_.Exception.Message)"
+    }
+}
+
+function Set-RegStr([string]$Path, [string]$Name, [string]$Value) {
+    if ($DryRun) { Log "  [TEST] REG $($Path -replace '^Registry::','')\$Name = `"$Value`""; return }
+    try {
+        if (-not (Test-Path -LiteralPath $Path)) { New-Item -Path $Path -Force | Out-Null }
+        if ($Name -eq '(Default)') { Set-Item -LiteralPath $Path -Value $Value }
+        else { New-ItemProperty -LiteralPath $Path -Name $Name -Value $Value -PropertyType String -Force | Out-Null }
+    } catch {
+        Log "  [!] $Path\$Name : $($_.Exception.Message)"
+    }
+}
+
+# $Look: appearance settings (see Get-Selection). -CurrentUser: also settings that only work
+# for the signed-in user (the classic context menu lives in the user's Classes hive).
+function Set-LookTweaks([string]$Root, $Look, [switch]$CurrentUser) {
+    $adv = "$Root\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+    if ($Look.Theme -gt 0) {
+        $light = [int]($Look.Theme -eq 2)
+        Set-Reg "$Root\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" 'AppsUseLightTheme' $light
+        Set-Reg "$Root\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" 'SystemUsesLightTheme' $light
+    }
+    if ($Look.Align -gt 0)  { Set-Reg $adv 'TaskbarAl' ([int]($Look.Align -eq 1)) }
+    if ($Look.Search -gt 0) { Set-Reg "$Root\Software\Microsoft\Windows\CurrentVersion\Search" 'SearchboxTaskbarMode' (@(0, 0, 1, 2)[$Look.Search]) }
+    if ($Look.Context -and $CurrentUser) {
+        Set-RegStr "$Root\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" '(Default)' ''
+    }
+    if ($Look.Hidden)  { Set-Reg $adv 'Hidden' 1 }
+    if ($Look.Copilot) { Set-Reg $adv 'ShowCopilotButton' 0 }
+    if ($Look.EndTask) { Set-Reg "$adv\TaskbarDeveloperSettings" 'TaskbarEndTask' 1 }
+    if ($Look.NumLock) { Set-RegStr "$Root\Control Panel\Keyboard" 'InitialKeyboardIndicators' '2' }
+    if ($Look.Mouse) {
+        foreach ($v in 'MouseSpeed', 'MouseThreshold1', 'MouseThreshold2') { Set-RegStr "$Root\Control Panel\Mouse" $v '0' }
+    }
+    if ($Look.Sticky) {
+        Set-RegStr "$Root\Control Panel\Accessibility\StickyKeys" 'Flags' '506'
+        Set-RegStr "$Root\Control Panel\Accessibility\ToggleKeys" 'Flags' '58'
+        Set-RegStr "$Root\Control Panel\Accessibility\Keyboard Response" 'Flags' '122'
     }
 }
 
@@ -690,11 +795,11 @@ New-Label $pApps 'appsQuestion' 0 -Bold | Out-Null
 $appChecks = @()
 $infoLabels = @()
 # Two columns; each group goes into the column that is currently shorter
-$colY = @(34, 34)
+$colY = @(72, 72)
 foreach ($cat in $AppCatalog.Keys) {
     $col = 0; if ($colY[1] -lt $colY[0]) { $col = 1 }
     $gb = L (New-Object System.Windows.Forms.GroupBox) $cat
-    $gb.Location = New-Object System.Drawing.Point(($col * 378), $colY[$col]); $gb.Width = 366
+    $gb.Location = New-Object System.Drawing.Point(($col * 370), $colY[$col]); $gb.Width = 358
     $iy = 24
     foreach ($a in $AppCatalog[$cat]) {
         $c = New-Object System.Windows.Forms.CheckBox
@@ -710,10 +815,18 @@ foreach ($cat in $AppCatalog.Keys) {
     $pApps.Controls.Add($gb)
     $colY[$col] += $gb.Height + 12
 }
+(New-Label $pApps 'profLabel' 35).Left = 0
+$x = 70
+foreach ($pk in $Profiles.Keys) {
+    $pb = L (New-Object System.Windows.Forms.Button) $pk
+    $pb.Tag = $pk; $pb.Size = New-Object System.Drawing.Size(105, 28); $pb.Location = New-Object System.Drawing.Point($x, 30)
+    $pb.Add_Click({ Apply-Profile $this.Tag })
+    $pApps.Controls.Add($pb); $x += 112
+}
 $btnAll  = L (New-Object System.Windows.Forms.Button) 'btnAll'
-$btnAll.Size  = New-Object System.Drawing.Size(90, 28); $btnAll.Location  = New-Object System.Drawing.Point(540, 0)
+$btnAll.Size  = New-Object System.Drawing.Size(90, 28); $btnAll.Location  = New-Object System.Drawing.Point(530, 30)
 $btnNone = L (New-Object System.Windows.Forms.Button) 'btnNone'
-$btnNone.Size = New-Object System.Drawing.Size(90, 28); $btnNone.Location = New-Object System.Drawing.Point(640, 0)
+$btnNone.Size = New-Object System.Drawing.Size(90, 28); $btnNone.Location = New-Object System.Drawing.Point(630, 30)
 $btnAll.Add_Click({  foreach ($c in $appChecks) { $c.Checked = $true } })
 $btnNone.Add_Click({ foreach ($c in $appChecks) { $c.Checked = $false } })
 $pApps.Controls.AddRange(@($btnAll, $btnNone))
@@ -734,7 +847,37 @@ foreach ($o in $Options) {
 $tip.SetToolTip($optChecks['Appx'], ($AppxRemove -join "`n"))
 New-Label $pOpts 'optsHint' ($y + 10) | Out-Null
 
-# --- Page 4: basic setup ---
+# --- Page 4: appearance ---
+$pLook = New-Page
+New-Label $pLook 'lookTitle' 0 -Bold | Out-Null
+$comboBoxes = @()
+function New-Combo($parent, $itemsKey, $x, $y, $w) {
+    $cb = New-Object System.Windows.Forms.ComboBox
+    $cb.DropDownStyle = 'DropDownList'; $cb.Width = $w; $cb.Tag = $itemsKey
+    $cb.Location = New-Object System.Drawing.Point($x, $y)
+    [void]$cb.Items.AddRange((T $itemsKey) -split '\|')
+    $cb.SelectedIndex = 0
+    $parent.Controls.Add($cb)
+    $script:comboBoxes += $cb
+    return $cb
+}
+(New-Label $pLook 'lookTheme'  43).Left = 12
+(New-Label $pLook 'lookAlign'  77).Left = 12
+(New-Label $pLook 'lookSearch' 111).Left = 12
+$cbTheme  = New-Combo $pLook 'themeItems'  260 40 170
+$cbAlign  = New-Combo $pLook 'alignItems'  260 74 170
+$cbSearch = New-Combo $pLook 'searchItems' 260 108 170
+$lookChk = @{}
+$y = 152
+foreach ($k in $LookChecks) {
+    $c = L (New-Object System.Windows.Forms.CheckBox) ('look' + $k)
+    $c.AutoSize = $true; $c.Location = New-Object System.Drawing.Point(12, $y)
+    $pLook.Controls.Add($c); $lookChk[$k] = $c
+    $y += 30
+}
+New-Label $pLook 'lookHint' ($y + 8) | Out-Null
+
+# --- Page 5: basic setup ---
 $pBase = New-Page
 New-Label $pBase 'baseTitle' 0 -Bold | Out-Null
 
@@ -759,15 +902,15 @@ $chkPower.Checked = $true; $chkPower.AutoSize = $true
 $chkPower.Location = New-Object System.Drawing.Point(12, 106)
 $pBase.Controls.Add($chkPower)
 
-function Fill-TimeoutBox($cb) {
+function Fill-Combo($cb) {
     $idx = $cb.SelectedIndex
     $cb.Items.Clear()
-    [void]$cb.Items.AddRange((T 'timeouts') -split '\|')
+    [void]$cb.Items.AddRange((T $cb.Tag) -split '\|')
     $cb.SelectedIndex = $idx
 }
 function New-TimeoutBox($x, $y, [int]$minutes) {
     $cb = New-Object System.Windows.Forms.ComboBox
-    $cb.DropDownStyle = 'DropDownList'; $cb.Width = 150
+    $cb.DropDownStyle = 'DropDownList'; $cb.Width = 150; $cb.Tag = 'timeouts'
     $cb.Location = New-Object System.Drawing.Point($x, $y)
     [void]$cb.Items.AddRange((T 'timeouts') -split '\|')
     $cb.SelectedIndex = [array]::IndexOf($TimeoutMinutes, $minutes)
@@ -783,6 +926,7 @@ $cbSlpAC = New-TimeoutBox 350 165 60
 $cbMonDC = New-TimeoutBox 180 199 5
 $cbSlpDC = New-TimeoutBox 350 199 15
 $timeoutBoxes = @($cbMonAC, $cbSlpAC, $cbMonDC, $cbSlpDC)
+$comboBoxes += $timeoutBoxes
 $chkPower.Add_CheckedChanged({ foreach ($cb in $timeoutBoxes) { $cb.Enabled = $chkPower.Checked } })
 
 $chkUpgrade = L (New-Object System.Windows.Forms.CheckBox) 'upgrade'
@@ -795,7 +939,7 @@ $pBase.Controls.AddRange(@($chkUpgrade, $chkWU))
 $lblBaseHint = New-Label $pBase 'baseHint' 320
 $lblBaseHint.ForeColor = [System.Drawing.Color]::FromArgb(200, 40, 40)
 
-# --- Page 5: summary ---
+# --- Page 6: summary ---
 $pSummary = New-Page
 New-Label $pSummary 'summaryTitle' 0 -Bold | Out-Null
 $txtSummary = New-Object System.Windows.Forms.TextBox
@@ -804,7 +948,7 @@ $txtSummary.Font = $fontMono; $txtSummary.BackColor = 'White'
 $txtSummary.Location = New-Object System.Drawing.Point(0, 30); $txtSummary.Size = New-Object System.Drawing.Size(745, 380)
 $pSummary.Controls.Add($txtSummary)
 
-# --- Page 6: run ---
+# --- Page 7: run ---
 $pRun = New-Page
 $lblRun = New-Label $pRun 'runRunning' 0 -Bold
 $progress = New-Object System.Windows.Forms.ProgressBar
@@ -820,8 +964,23 @@ $form.Controls.AddRange(@($body, $header, $footer))
 # ================================================================
 #  Flow / navigation
 # ================================================================
-$pages  = @($pBrowser, $pApps, $pOpts, $pBase, $pSummary, $pRun)
-$titles = @('step1', 'step2', 'step3', 'step4', 'step5', 'stepRun')
+$pages  = @($pBrowser, $pApps, $pOpts, $pLook, $pBase, $pSummary, $pRun)
+$titles = @('step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'stepRun')
+# page indices
+$PgBase = 4; $PgSummary = 5; $PgRun = 6; $PgDone = 7
+
+function Apply-Profile([string]$key) {
+    $prof = $Profiles[$key]
+    foreach ($c in $appChecks) {
+        if ($null -eq $prof.Apps) { $c.Checked = [bool]$c.Tag.Def }
+        else { $c.Checked = ($prof.Apps -contains $c.Tag.Id) -or ($prof.Apps -contains $c.Tag.IdDe) }
+    }
+    $look = $prof.Look
+    $cbTheme.SelectedIndex  = [int]$look.Theme
+    $cbAlign.SelectedIndex  = [int]$look.Align
+    $cbSearch.SelectedIndex = [int]$look.Search
+    foreach ($k in $LookChecks) { $lookChk[$k].Checked = [bool]$look[$k] }
+}
 $script:page = 0
 
 function Get-Selection {
@@ -842,6 +1001,9 @@ function Get-Selection {
     }
     $sel.Upgrade  = $chkUpgrade.Checked
     $sel.WU       = $chkWU.Checked
+    $sel.Look     = @{ Theme = $cbTheme.SelectedIndex; Align = $cbAlign.SelectedIndex; Search = $cbSearch.SelectedIndex }
+    foreach ($k in $LookChecks) { $sel.Look[$k] = $lookChk[$k].Checked }
+    $sel.LookAny  = @($sel.Look.Values | Where-Object { $_ }).Count -gt 0
     return $sel
 }
 
@@ -864,6 +1026,14 @@ function Build-Summary {
         $mark = '[ ]'; if ($s.Opt[$o.Key]) { $mark = '[x]' }
         $t += "  $mark $(T ('opt' + $o.Key))" + $nl
     }
+    $t += $nl + (T 'sumLook') + $nl
+    foreach ($pair in @(@('lookTheme', $cbTheme), @('lookAlign', $cbAlign), @('lookSearch', $cbSearch))) {
+        $t += '  {0,-26} {1}' -f (T $pair[0]), $pair[1].SelectedItem + $nl
+    }
+    foreach ($k in $LookChecks) {
+        $mark = '[ ]'; if ($s.Look[$k]) { $mark = '[x]' }
+        $t += "  $mark $(T ('look' + $k))" + $nl
+    }
     $t += $nl + (T 'sumBase') + $nl
     if ($s.NewName) { $t += '  {0,-15} {1} -> {2}' -f (T 'sumName'), $env:COMPUTERNAME, $s.NewName + $nl }
     else            { $t += '  {0,-15} {1} ({2})' -f (T 'sumName'), (T 'sumUnchanged'), $env:COMPUTERNAME + $nl }
@@ -879,13 +1049,13 @@ function Build-Summary {
 
 function Show-Page([int]$i) {
     for ($j = 0; $j -lt $pages.Count; $j++) { $pages[$j].Visible = ($j -eq $i) }
-    $lblStep.Text     = T $titles[[Math]::Min($i, 5)]
-    $btnBack.Enabled  = ($i -gt 0 -and $i -lt 5)
-    $btnBack.Visible  = ($i -lt 5)
-    if ($i -eq 4) {
+    $lblStep.Text     = T $titles[[Math]::Min($i, $PgRun)]
+    $btnBack.Enabled  = ($i -gt 0 -and $i -lt $PgRun)
+    $btnBack.Visible  = ($i -lt $PgRun)
+    if ($i -eq $PgSummary) {
         $txtSummary.Text = Build-Summary
         if ($DryRun) { $btnNext.Text = T 'btnStartTest' } else { $btnNext.Text = T 'btnStart' }
-    } elseif ($i -lt 4) {
+    } elseif ($i -lt $PgSummary) {
         $btnNext.Text = T 'btnNext'
     }
     $script:page = $i
@@ -894,9 +1064,9 @@ function Show-Page([int]$i) {
 function Apply-Language {
     foreach ($e in $script:LocCtl) { Set-Text $e.Ctl (T $e.Key) }
     foreach ($l in $infoLabels) { if ($script:Lang -eq 'de') { Set-Text $l $l.Tag.De } else { Set-Text $l $l.Tag.En } }
-    foreach ($cb in $timeoutBoxes) { Fill-TimeoutBox $cb }
+    foreach ($cb in $comboBoxes) { Fill-Combo $cb }
     $lblCurName.Text = T 'currentName' $env:COMPUTERNAME
-    if ($script:page -lt 5) { Show-Page $script:page }
+    if ($script:page -lt $PgRun) { Show-Page $script:page }
 }
 
 function Invoke-Setup {
@@ -1053,11 +1223,20 @@ function Invoke-Setup {
 
     Set-UserTweaks 'Registry::HKEY_CURRENT_USER' $o
 
-    if ($o.DefProf -and ($o.Ads -or $o.Telemetry -or $o.Explorer)) {
+    # Appearance
+    if ($s.LookAny) {
+        Log (T 'logLook')
+        Set-LookTweaks 'Registry::HKEY_CURRENT_USER' $s.Look -CurrentUser
+        # Num Lock on the sign-in screen as well
+        if ($s.Look.NumLock -and $IsAdmin) { Set-RegStr 'Registry::HKEY_USERS\.DEFAULT\Control Panel\Keyboard' 'InitialKeyboardIndicators' '2' }
+    }
+
+    if ($o.DefProf -and ($o.Ads -or $o.Telemetry -or $o.Explorer -or $s.LookAny)) {
         Log (T 'logDefProf')
         $rc = Run-Proc 'reg.exe' "load HKU\DefUser `"$env:SystemDrive\Users\Default\NTUSER.DAT`""
         if ($rc -eq 0) {
             Set-UserTweaks 'Registry::HKEY_USERS\DefUser' $o
+            Set-LookTweaks 'Registry::HKEY_USERS\DefUser' $s.Look
             [gc]::Collect(); [gc]::WaitForPendingFinalizers(); Start-Sleep -Milliseconds 500
             Run-Proc 'reg.exe' 'unload HKU\DefUser' | Out-Null
         } else { Log (T 'logDefProfErr' $rc) }
@@ -1153,6 +1332,12 @@ try {
     }
     Log (T 'logFile' $script:LogFile)
 
+    if ($s.LookAny -or $o.Explorer -or $o.Ads) {
+        Log (T 'logExplorer')
+        if ($DryRun) { Log '  [TEST] Stop-Process explorer' }
+        else { Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue }   # Windows restarts it automatically
+    }
+
     if ($s.SetDefault) {
         if ($DryRun) { Log (T 'logSettingsTest') }
         else { Start-Process 'ms-settings:defaultapps' }
@@ -1161,7 +1346,7 @@ try {
     $script:Running = $false
     $btnCancel.Text = T 'btnClose'; $btnCancel.Enabled = $true
     $btnNext.Text = T 'btnReboot'; $btnNext.Enabled = $true
-    $script:page = 6
+    $script:page = $PgDone
 }
 
 $cbLang.Add_SelectedIndexChanged({
@@ -1178,7 +1363,7 @@ $btnBack.Add_Click({ if ($script:page -gt 0) { Show-Page ($script:page - 1) } })
 $btnCancel.Add_Click({ $form.Close() })
 $btnNext.Add_Click({
     switch ($script:page) {
-        3 {
+        $PgBase {
             if ($chkRename.Checked) {
                 $n = $txtName.Text.Trim()
                 if ($n -notmatch '^[A-Za-z0-9-]{1,15}$' -or $n -match '^[0-9]+$' -or $n.StartsWith('-') -or $n.EndsWith('-')) {
@@ -1186,17 +1371,17 @@ $btnNext.Add_Click({
                     return
                 }
             }
-            Show-Page 4
+            Show-Page $PgSummary
         }
-        4 {
+        $PgSummary {
             if (-not $DryRun) {
                 $r = [System.Windows.Forms.MessageBox]::Show((T 'msgConfirm'), $AppName, 'YesNo', 'Question')
                 if ($r -ne 'Yes') { return }
             }
-            Show-Page 5
+            Show-Page $PgRun
             Invoke-Setup
         }
-        6 {
+        $PgDone {
             if ($DryRun) {
                 [System.Windows.Forms.MessageBox]::Show((T 'msgTestNoReboot'), $AppName) | Out-Null
             } else {

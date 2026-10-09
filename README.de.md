@@ -8,6 +8,7 @@ alle Updates installieren, fertig. Keine Installation, keine Abhängigkeiten.
 
 ![Browserauswahl](docs/browser-de.png)
 ![Programmauswahl](docs/programs-de.png)
+![Darstellung](docs/appearance-de.png)
 
 ## Funktionen
 
@@ -18,6 +19,11 @@ alle Updates installieren, fertig. Keine Installation, keine Abhängigkeiten.
 - **Gaming**: Steam, Epic, Ubisoft Connect, EA app, Battle.net, GOG, Rockstar, Amazon Games, Xbox-App,
   Discord, TeamSpeak, Mumble, NVIDIA App, MSI Afterburner, Software für Mäuse/Headsets und mehr.
   Wer die Xbox-App auswählt, behält beim Aufräumen die Xbox-Komponenten
+- **Profile**: *Gaming-PC* und *Büro-PC* haken mit einem Klick passende Programme an und belegen
+  die Darstellungsseite vor (die NVIDIA App nur, wenn eine NVIDIA-Grafikkarte verbaut ist)
+- **Darstellung**: Dunkel-/Hellmodus, Ausrichtung und Suche der Taskleiste, klassisches Rechtsklick-Menü,
+  versteckte Dateien anzeigen, Copilot-Schaltfläche ausblenden, „Task beenden“ in der Taskleiste,
+  NumLock beim Start, Mausbeschleunigung aus, Einrastfunktion-Abfrage aus
 - **Windows aufräumen**: entfernt vorinstallierte Consumer-Apps (Xbox, Bing News, Solitaire, Clipchamp …),
   schaltet Werbung, Vorschläge, die Bing-Suche im Startmenü und Widgets ab, setzt die Telemetrie auf Minimum,
   zeigt Dateiendungen an und deaktiviert den Schnellstart
@@ -63,6 +69,7 @@ Alle Listen stehen oben im PowerShell-Teil von `FreshWin.bat`:
 - `$AppCatalog` enthält die Programme nach Kategorie. `Id` ist die winget-ID (finden mit `winget search <Name>`;
   `Source = 'msstore'` für Apps aus dem Microsoft Store),
   `Def = $true` hakt das Programm beim Start an, `De`/`En` enthalten die Kurzbeschreibungen
+- `$Profiles` enthält die Profile (winget-IDs und Vorgaben für die Darstellung)
 - `$AppxRemove` enthält die vorinstallierten Apps, die entfernt werden
 - `$Strings` enthält alle Texte (Deutsch und Englisch)
 
