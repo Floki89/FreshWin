@@ -83,8 +83,9 @@ All lists are at the top of the PowerShell part of `FreshWin.bat`:
 
 ## Disclaimer
 
-Use at your own risk. FreshWin changes system settings and removes apps. Run it in
-test mode first and preferably on freshly installed machines.
+> [!CAUTION]
+> **Use at your own risk.** FreshWin changes system settings and removes apps.
+> **Run it in test mode first** (`FreshWin.bat /test`) and preferably on freshly installed machines.
 
 ## License
 

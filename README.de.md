@@ -83,8 +83,9 @@ Alle Listen stehen oben im PowerShell-Teil von `FreshWin.bat`:
 
 ## Haftungsausschluss
 
-Benutzung auf eigene Verantwortung. FreshWin ändert Systemeinstellungen und entfernt Apps. Am besten
-zuerst im Testmodus ausprobieren und vorzugsweise auf frisch installierten Rechnern einsetzen.
+> [!CAUTION]
+> **Benutzung auf eigene Verantwortung.** FreshWin ändert Systemeinstellungen und entfernt Apps.
+> **Zuerst im Testmodus ausprobieren** (`FreshWin.bat /test`) und vorzugsweise auf frisch installierten Rechnern einsetzen.
 
 ## Lizenz
 
