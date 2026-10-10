@@ -1,0 +1,26 @@
+name: Program request / Programm vorschlagen
+description: Suggest a program for the list / Ein Programm für die Liste vorschlagen
+labels: [program request]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Program / Programm
+      placeholder: e.g. Spotify
+    validations:
+      required: true
+  - type: input
+    id: winget
+    attributes:
+      label: winget ID
+      description: "Find it with: winget search <name>"
+      placeholder: e.g. Spotify.Spotify
+  - type: input
+    id: category
+    attributes:
+      label: Category / Kategorie
+      placeholder: e.g. Media
+  - type: textarea
+    id: why
+    attributes:
+      label: Why is it useful? / Wofür ist es nützlich?

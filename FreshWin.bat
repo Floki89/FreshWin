@@ -23,8 +23,11 @@ exit /b
 # ================================================================
 #  FreshWin - setup wizard for fresh Windows 11 installations
 #
-#  Options:   FreshWin.bat /test       test mode (dry run)
-#             FreshWin.bat /lang:en    force language (de | en)
+#  Options:   FreshWin.bat /test             test mode (dry run)
+#             FreshWin.bat /lang:en          force language (de | en)
+#             FreshWin.bat /config:x.json    load a saved selection
+#             FreshWin.bat /auto             start right away with the saved selection
+#  A FreshWin.json next to the script is loaded automatically.
 #  Without download, in an elevated Windows PowerShell:
 #             irm https://raw.githubusercontent.com/Floki89/FreshWin/main/FreshWin.bat | iex
 #             (test mode: set $env:SETUP_ARGS = '/test' first)
@@ -37,11 +40,14 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $AppName    = 'FreshWin'
-$AppVersion = '1.3.0'
+$RepoUrl    = 'https://github.com/Floki89/FreshWin'
+$AppVersion = '1.4.0'
 $SetupFile  = $env:SETUP_FILE
 $ArgLine    = [string]$env:SETUP_ARGS
 $DryRun     = ($ArgLine -match '(^|\s)[/-]test(\s|$)') -or
               ([IO.Path]::GetFileNameWithoutExtension($SetupFile) -match '[-_]test$')
+# GitHub and the connectivity check need TLS 1.2
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 $IsAdmin    = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 $script:Lang = 'en'
@@ -72,6 +78,26 @@ de = @{
     logInstallNoAdmin = '  [!] Dieses Programm lässt sich nicht mit Adminrechten installieren – bitte später normal installieren.'
     logInstallRebootFirst = '  [!] Windows verlangt vorher einen Neustart – nach dem Neustart FreshWin erneut starten.'
     logRunAgain    = 'Tipp: Nach dem Neustart unter Einstellungen > Windows Update erneut suchen – manche Updates erscheinen erst danach.'
+    search         = 'Suchen:'
+    selCount       = '{0} ausgewählt'
+    checkingInstalled = 'prüfe installierte Programme …'
+    installed      = '✓ bereits installiert'
+    help           = 'Hilfe'
+    updateAvail    = 'Neue Version {0} verfügbar'
+    btnLog         = 'Log öffnen'
+    btnLoad        = 'Auswahl laden …'
+    btnSave        = 'Auswahl speichern …'
+    cfgLoaded      = '✓ Auswahl geladen: {0}'
+    cfgSaved       = "Auswahl gespeichert:`n{0}`n`nTipp: Liegt die Datei als FreshWin.json neben FreshWin.bat, wird sie beim Start automatisch geladen. Mit FreshWin.bat /auto läuft das Setup dann ohne Klicks."
+    cfgError       = "Die Datei konnte nicht gelesen werden:`n{0}"
+    autoReboot     = 'Nach Abschluss automatisch neu starten (z. B. wenn das Setup über Nacht läuft)'
+    sumAutoReboot  = 'Automatischer Neustart am Ende'
+    runRebootSoon  = 'Fertig. Der PC startet in 2 Minuten automatisch neu.'
+    btnAbortReboot = 'Neustart abbrechen'
+    logReboot      = 'Automatischer Neustart in 2 Minuten …'
+    logRebootTest  = '[TEST] würde den PC automatisch neu starten'
+    logAuto        = 'Automatischer Modus (/auto) – Hinweise werden nur protokolliert:'
+    autoNoConfig   = 'Für /auto fehlt eine gespeicherte Auswahl (FreshWin.json neben der Datei oder /config:Datei).'
     testBadge      = '  TESTMODUS – es wird nichts verändert  '
     btnCancel      = 'Abbrechen';      btnBack  = '< Zurück';   btnNext   = 'Weiter >'
     btnStart       = 'Jetzt starten';  btnStartTest = 'Test starten'
@@ -144,7 +170,7 @@ de = @{
     runRunning     = 'Setup läuft …'
     runDone        = 'Fertig. Ein Neustart wird empfohlen.'
     runDoneReboot  = 'Fertig. Bitte neu starten – danach unter Windows Update noch einmal nach Updates suchen.'
-    runDoneErrors  = 'Fertig mit {0} Problem(en) – siehe Log.'
+    runDoneErrors  = 'Fertig – {0} Problem(e): {1}. Details im Log.'
     msgConfirm     = 'Setup jetzt mit diesen Einstellungen starten?'
     msgInvalidName = "Ungültiger Computername: '{0}'`n`nErlaubt: 1-15 Zeichen, A-Z, 0-9 und Bindestrich (nicht am Anfang/Ende), nicht nur Ziffern."
     msgTestNoReboot = 'Testmodus: Es wird kein Neustart ausgeführt.'
@@ -239,6 +265,26 @@ en = @{
     logInstallNoAdmin = '  [!] This program cannot be installed with admin rights – please install it normally later.'
     logInstallRebootFirst = '  [!] Windows requires a restart first – start FreshWin again after restarting.'
     logRunAgain    = 'Tip: after restarting, search again under Settings > Windows Update – some updates only show up then.'
+    search         = 'Search:'
+    selCount       = '{0} selected'
+    checkingInstalled = 'checking installed programs …'
+    installed      = '✓ already installed'
+    help           = 'Help'
+    updateAvail    = 'New version {0} available'
+    btnLog         = 'Open log'
+    btnLoad        = 'Load selection …'
+    btnSave        = 'Save selection …'
+    cfgLoaded      = '✓ Selection loaded: {0}'
+    cfgSaved       = "Selection saved:`n{0}`n`nTip: saved as FreshWin.json next to FreshWin.bat, it is loaded automatically at start. With FreshWin.bat /auto the setup then runs without any clicks."
+    cfgError       = "The file could not be read:`n{0}"
+    autoReboot     = 'Restart automatically when finished (e.g. when setup runs overnight)'
+    sumAutoReboot  = 'Automatic restart at the end'
+    runRebootSoon  = 'Done. The PC restarts automatically in 2 minutes.'
+    btnAbortReboot = 'Cancel restart'
+    logReboot      = 'Automatic restart in 2 minutes …'
+    logRebootTest  = '[TEST] would restart the PC automatically'
+    logAuto        = 'Automatic mode (/auto) – notes are only logged:'
+    autoNoConfig   = '/auto needs a saved selection (FreshWin.json next to the file, or /config:file).'
     testBadge      = '  TEST MODE – nothing will be changed  '
     btnCancel      = 'Cancel';         btnBack  = '< Back';     btnNext   = 'Next >'
     btnStart       = 'Start now';      btnStartTest = 'Start test'
@@ -311,7 +357,7 @@ en = @{
     runRunning     = 'Setup is running …'
     runDone        = 'Done. A restart is recommended.'
     runDoneReboot  = 'Done. Please restart – then search for updates in Windows Update once more.'
-    runDoneErrors  = 'Done with {0} problem(s) – see log.'
+    runDoneErrors  = 'Done – {0} problem(s): {1}. See the log for details.'
     msgConfirm     = 'Start setup with these settings now?'
     msgInvalidName = "Invalid computer name: '{0}'`n`nAllowed: 1-15 characters, A-Z, 0-9 and hyphen (not at start/end), not digits only."
     msgTestNoReboot = 'Test mode: no restart will be performed.'
@@ -603,6 +649,8 @@ function Log([string]$msg) {
     try { Add-Content -LiteralPath $script:LogFile -Value $line -Encoding UTF8 } catch {}
     if ($script:txtLog) {
         $script:txtLog.AppendText($line + "`r`n")
+        # Headings (no indentation) also become the status line above the progress bar
+        if ($script:Running -and $msg -match '^[^\s=\[]') { $lblRun.Text = $script:StatusPrefix + $msg }
         [System.Windows.Forms.Application]::DoEvents()
     }
 }
@@ -647,7 +695,8 @@ function Get-AppId($a) {
 # Start an external program without freezing the UI.
 # -Always: run in test mode as well (read-only commands only).
 # -TimeoutMin: kill the process tree after that many minutes ($script:TimedOut is set, returns -1).
-function Run-Proc([string]$File, [string]$Arguments, [switch]$Always, [int]$TimeoutMin = 0) {
+# -Quiet: don't copy the output into the log file.
+function Run-Proc([string]$File, [string]$Arguments, [switch]$Always, [int]$TimeoutMin = 0, [switch]$Quiet) {
     $script:TimedOut = $false
     if ($DryRun -and -not $Always) {
         Log (T 'logWould' $File $Arguments)
@@ -678,7 +727,7 @@ function Run-Proc([string]$File, [string]$Arguments, [switch]$Always, [int]$Time
         try   { $out = (New-Object System.Text.UTF8Encoding($false, $true)).GetString($bytes) }
         catch { $out = [Text.Encoding]::GetEncoding($script:OemCp).GetString($bytes) }
         $script:LastOutput = $out
-        if ($out) { Add-Content -LiteralPath $script:LogFile -Value $out -Encoding UTF8 }
+        if ($out -and -not $Quiet) { Add-Content -LiteralPath $script:LogFile -Value $out -Encoding UTF8 }
         Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
     } catch {}
     if ($script:TimedOut) { return -1 }
@@ -817,6 +866,9 @@ $accent    = [System.Drawing.Color]::FromArgb(0, 84, 147)
 $form = New-Object System.Windows.Forms.Form
 $form.Text            = "$AppName $AppVersion"
 $form.Size            = New-Object System.Drawing.Size(820, 640)
+# Small laptop screens: never taller than the visible area (pages scroll instead)
+$workArea = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+if ($workArea.Height -lt $form.Height) { $form.Height = $workArea.Height }
 $form.StartPosition   = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox     = $false
@@ -837,7 +889,16 @@ $cbLang.DropDownStyle = 'DropDownList'; $cbLang.Width = 110
 $cbLang.Location = New-Object System.Drawing.Point(670, 24)
 [void]$cbLang.Items.AddRange(@('Deutsch', 'English'))
 if ($script:Lang -eq 'de') { $cbLang.SelectedIndex = 0 } else { $cbLang.SelectedIndex = 1 }
-$header.Controls.AddRange(@($lblTitle, $lblStep, $cbLang))
+$lnkHelp = L (New-Object System.Windows.Forms.LinkLabel) 'help'
+$lnkHelp.AutoSize = $true; $lnkHelp.Location = New-Object System.Drawing.Point(612, 28)
+$lnkHelp.LinkColor = 'White'; $lnkHelp.ActiveLinkColor = 'White'
+$lnkHelp.Add_LinkClicked({ Start-Process "$RepoUrl#readme" })
+$lnkUpdate = New-Object System.Windows.Forms.LinkLabel
+$lnkUpdate.AutoSize = $true; $lnkUpdate.Visible = $false; $lnkUpdate.Font = $fontSmall
+$lnkUpdate.Location = New-Object System.Drawing.Point(300, 56)
+$lnkUpdate.LinkColor = [System.Drawing.Color]::FromArgb(255, 220, 110); $lnkUpdate.ActiveLinkColor = 'White'
+$lnkUpdate.Add_LinkClicked({ Start-Process "$RepoUrl/releases/latest" })
+$header.Controls.AddRange(@($lblTitle, $lblStep, $cbLang, $lnkHelp, $lnkUpdate))
 if ($DryRun) {
     $lblTest = L (New-Object System.Windows.Forms.Label) 'testBadge'
     $lblTest.Font = $fontBold; $lblTest.AutoSize = $true
@@ -899,6 +960,17 @@ $chkDefaultBrowser.Checked = $true
 $chkDefaultBrowser.AutoSize = $true; $chkDefaultBrowser.Location = New-Object System.Drawing.Point(12, ($y + 14))
 $pBrowser.Controls.Add($chkDefaultBrowser)
 New-Label $pBrowser 'browserHint' ($y + 56) | Out-Null
+$btnLoad = L (New-Object System.Windows.Forms.Button) 'btnLoad'
+$btnLoad.Size = New-Object System.Drawing.Size(160, 28); $btnLoad.Location = New-Object System.Drawing.Point(585, 0)
+$btnLoad.Add_Click({
+    $dlg = New-Object System.Windows.Forms.OpenFileDialog
+    $dlg.Filter = 'FreshWin (*.json)|*.json'; $dlg.InitialDirectory = Get-ConfigDir
+    if ($dlg.ShowDialog() -eq 'OK') { Import-Config $dlg.FileName | Out-Null }
+})
+$lblCfg = New-Object System.Windows.Forms.Label
+$lblCfg.AutoSize = $true; $lblCfg.ForeColor = [System.Drawing.Color]::FromArgb(0, 128, 60)
+$lblCfg.Location = New-Object System.Drawing.Point(0, ($y + 130))
+$pBrowser.Controls.AddRange(@($btnLoad, $lblCfg))
 foreach ($r in $browserRadios) {
     $r.Add_CheckedChanged({ $chkDefaultBrowser.Enabled = [bool](($browserRadios | Where-Object Checked | Select-Object -First 1).Tag.Id) })
 }
@@ -906,28 +978,97 @@ foreach ($r in $browserRadios) {
 # --- Page 2: programs ---
 $pApps = New-Page
 New-Label $pApps 'appsQuestion' 0 -Bold | Out-Null
-$appChecks = @()
+$appChecks  = @()
 $infoLabels = @()
-# Two columns; each group goes into the column that is currently shorter
-$colY = @(72, 72)
+$appGroups  = @()
+$appTip = New-Object System.Windows.Forms.ToolTip
 foreach ($cat in $AppCatalog.Keys) {
-    $col = 0; if ($colY[1] -lt $colY[0]) { $col = 1 }
     $gb = L (New-Object System.Windows.Forms.GroupBox) $cat
-    $gb.Location = New-Object System.Drawing.Point(($col * 370), $colY[$col]); $gb.Width = 358
-    $iy = 24
+    $gb.Width = 358
+    $items = @()
     foreach ($a in $AppCatalog[$cat]) {
         $c = New-Object System.Windows.Forms.CheckBox
         $c.Text = $a.Name; $c.Tag = $a; $c.Checked = $a.Def
-        $c.Location = New-Object System.Drawing.Point(12, $iy); $c.Width = 170
+        $c.Left = 12; $c.Width = 170
+        $c.Add_CheckedChanged({ Update-Count })
         $info = New-Object System.Windows.Forms.Label
         $info.Tag = $a; $info.ForeColor = 'Gray'; $info.AutoSize = $true; $info.Font = $fontSmall
-        $info.Location = New-Object System.Drawing.Point(184, ($iy + 4))
+        $info.Left = 184
+        $appTip.SetToolTip($c, "winget: $($a.Id)"); $appTip.SetToolTip($info, "winget: $($a.Id)")
         $gb.Controls.AddRange(@($c, $info)); $appChecks += $c; $infoLabels += $info
-        $iy += 28
+        $items += @{ Chk = $c; Info = $info }
     }
-    $gb.Height = $iy + 8
     $pApps.Controls.Add($gb)
-    $colY[$col] += $gb.Height + 12
+    $appGroups += @{ Box = $gb; Key = $cat; Items = $items }
+}
+
+function Test-Match([string]$text, [string]$find) {
+    return ($text -and $text.IndexOf($find, [StringComparison]::OrdinalIgnoreCase) -ge 0)
+}
+# Two columns; each group goes into the column that is currently shorter. Honors the search box.
+function Update-AppLayout {
+    $find = ''; if ($txtSearch) { $find = $txtSearch.Text.Trim() }
+    $pApps.AutoScrollPosition = New-Object System.Drawing.Point(0, 0)
+    $pApps.SuspendLayout()
+    function Test-AppHit($a) {
+        return (Test-Match $a.Name $find) -or (Test-Match $a.De $find) -or (Test-Match $a.En $find) -or (Test-Match $a.Id $find)
+    }
+    # Matching programs win; a matching group name only counts if no program matches directly
+    $useCat = $find -and -not @($appChecks | Where-Object { Test-AppHit $_.Tag }).Count
+    $colY = @(72, 72)
+    foreach ($g in $appGroups) {
+        $catHit = (-not $find) -or ($useCat -and (Test-Match (T $g.Key) $find))
+        $iy = 24
+        foreach ($it in $g.Items) {
+            $show = $catHit -or (Test-AppHit $it.Chk.Tag)
+            $it.Chk.Visible = $show; $it.Info.Visible = $show
+            if ($show) { $it.Chk.Top = $iy; $it.Info.Top = $iy + 4; $iy += 28 }
+        }
+        $any = $iy -gt 24
+        $g.Box.Visible = $any
+        if ($any) {
+            $col = 0; if ($colY[1] -lt $colY[0]) { $col = 1 }
+            $g.Box.Height = $iy + 8
+            $g.Box.Location = New-Object System.Drawing.Point(($col * 370), $colY[$col])
+            $colY[$col] += $g.Box.Height + 12
+        }
+    }
+    $pApps.ResumeLayout()
+}
+function Update-Count {
+    if ($script:page -ne 1) { return }
+    $n = @($appChecks | Where-Object Checked).Count
+    $lblStep.Text = (T 'step2') + '   ·   ' + (T 'selCount' $n)
+}
+
+# Installed programs (winget export), so the list can show what is already there
+$script:InstalledIds = $null
+function Test-Installed($a) {
+    return ($script:InstalledIds -and ($script:InstalledIds[$a.Id] -or ($a.IdDe -and $script:InstalledIds[$a.IdDe])))
+}
+function Set-InfoText($l) {
+    if (Test-Installed $l.Tag) { Set-Text $l (T 'installed'); $l.ForeColor = [System.Drawing.Color]::FromArgb(0, 128, 60) }
+    else {
+        if ($script:Lang -eq 'de') { Set-Text $l $l.Tag.De } else { Set-Text $l $l.Tag.En }
+        $l.ForeColor = 'Gray'
+    }
+}
+function Find-Installed {
+    if ($null -ne $script:InstalledIds) { return }
+    $script:InstalledIds = @{}
+    if (-not (Test-Winget)) { return }
+    $lblStep.Text = (T 'step2') + '   ·   ' + (T 'checkingInstalled')
+    $form.Cursor = 'WaitCursor'
+    [System.Windows.Forms.Application]::DoEvents()
+    $tmp = Join-Path $env:TEMP "FreshWin_installed_$PID.json"
+    Run-Proc 'winget' "export -o `"$tmp`" --accept-source-agreements --disable-interactivity" -Always -Quiet -TimeoutMin 2 | Out-Null
+    try {
+        $j = Get-Content -LiteralPath $tmp -Raw -Encoding UTF8 | ConvertFrom-Json
+        foreach ($src in $j.Sources) { foreach ($pk in $src.Packages) { $script:InstalledIds[$pk.PackageIdentifier] = $true } }
+    } catch {}
+    Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
+    $form.Cursor = 'Default'
+    foreach ($l in $infoLabels) { Set-InfoText $l }
 }
 (New-Label $pApps 'profLabel' 35).Left = 0
 $x = 70
@@ -941,9 +1082,15 @@ $btnAll  = L (New-Object System.Windows.Forms.Button) 'btnAll'
 $btnAll.Size  = New-Object System.Drawing.Size(90, 28); $btnAll.Location  = New-Object System.Drawing.Point(530, 30)
 $btnNone = L (New-Object System.Windows.Forms.Button) 'btnNone'
 $btnNone.Size = New-Object System.Drawing.Size(90, 28); $btnNone.Location = New-Object System.Drawing.Point(630, 30)
-$btnAll.Add_Click({  foreach ($c in $appChecks) { $c.Checked = $true } })
-$btnNone.Add_Click({ foreach ($c in $appChecks) { $c.Checked = $false } })
-$pApps.Controls.AddRange(@($btnAll, $btnNone))
+$btnAll.Add_Click({  foreach ($c in $appChecks) { if ($c.Visible) { $c.Checked = $true } } })
+$btnNone.Add_Click({ foreach ($c in $appChecks) { if ($c.Visible) { $c.Checked = $false } } })
+$lblSearch = L (New-Object System.Windows.Forms.Label) 'search'
+$lblSearch.AutoSize = $true; $lblSearch.Location = New-Object System.Drawing.Point(505, 3)
+$txtSearch = New-Object System.Windows.Forms.TextBox
+$txtSearch.Location = New-Object System.Drawing.Point(570, 0); $txtSearch.Width = 150
+$txtSearch.Add_TextChanged({ Update-AppLayout })
+$pApps.Controls.AddRange(@($btnAll, $btnNone, $lblSearch, $txtSearch))
+Update-AppLayout
 
 # --- Page 3: options / debloat ---
 $pOpts = New-Page
@@ -1053,8 +1200,10 @@ $chkDrivers = L (New-Object System.Windows.Forms.CheckBox) 'drivers'
 $chkDrivers.Checked = $true; $chkDrivers.AutoSize = $true
 $chkDrivers.Location = New-Object System.Drawing.Point(32, 312)
 $chkWU.Add_CheckedChanged({ $chkDrivers.Enabled = $chkWU.Checked })
-$pBase.Controls.AddRange(@($chkUpgrade, $chkWU, $chkDrivers))
-$lblBaseHint = New-Label $pBase 'baseHint' 350
+$chkAutoReboot = L (New-Object System.Windows.Forms.CheckBox) 'autoReboot'
+$chkAutoReboot.AutoSize = $true; $chkAutoReboot.Location = New-Object System.Drawing.Point(12, 344)
+$pBase.Controls.AddRange(@($chkUpgrade, $chkWU, $chkDrivers, $chkAutoReboot))
+$lblBaseHint = New-Label $pBase 'baseHint' 382
 $lblBaseHint.ForeColor = [System.Drawing.Color]::FromArgb(200, 40, 40)
 
 # --- Page 6: summary ---
@@ -1063,8 +1212,18 @@ New-Label $pSummary 'summaryTitle' 0 -Bold | Out-Null
 $txtSummary = New-Object System.Windows.Forms.TextBox
 $txtSummary.Multiline = $true; $txtSummary.ReadOnly = $true; $txtSummary.ScrollBars = 'Vertical'
 $txtSummary.Font = $fontMono; $txtSummary.BackColor = 'White'
-$txtSummary.Location = New-Object System.Drawing.Point(0, 30); $txtSummary.Size = New-Object System.Drawing.Size(745, 380)
-$pSummary.Controls.Add($txtSummary)
+$txtSummary.Location = New-Object System.Drawing.Point(0, 36); $txtSummary.Size = New-Object System.Drawing.Size(745, 374)
+$btnSave = L (New-Object System.Windows.Forms.Button) 'btnSave'
+$btnSave.Size = New-Object System.Drawing.Size(160, 28); $btnSave.Location = New-Object System.Drawing.Point(585, 0)
+$btnSave.Add_Click({
+    $dlg = New-Object System.Windows.Forms.SaveFileDialog
+    $dlg.Filter = 'FreshWin (*.json)|*.json'; $dlg.FileName = 'FreshWin.json'; $dlg.InitialDirectory = Get-ConfigDir
+    if ($dlg.ShowDialog() -eq 'OK') {
+        Get-Config | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $dlg.FileName -Encoding UTF8
+        [System.Windows.Forms.MessageBox]::Show((T 'cfgSaved' $dlg.FileName), $AppName, 'OK', 'Information') | Out-Null
+    }
+})
+$pSummary.Controls.AddRange(@($txtSummary, $btnSave))
 
 # --- Page 7: run ---
 $pRun = New-Page
@@ -1123,7 +1282,86 @@ function Get-Selection {
     $sel.Look     = @{ Theme = $cbTheme.SelectedIndex; Align = $cbAlign.SelectedIndex; Search = $cbSearch.SelectedIndex }
     foreach ($k in $LookChecks) { $sel.Look[$k] = $lookChk[$k].Checked }
     $sel.LookAny  = @($sel.Look.Values | Where-Object { $_ }).Count -gt 0
+    $sel.AutoReboot = $chkAutoReboot.Checked
     return $sel
+}
+
+# ---- Saved selection (JSON) ----
+function Get-ConfigDir {
+    if ($SetupFile) { return [IO.Path]::GetDirectoryName($SetupFile) }
+    return [Environment]::GetFolderPath('Desktop')
+}
+function Get-Config {
+    $s = Get-Selection
+    return [ordered]@{
+        FreshWin      = $AppVersion
+        Browser       = $s.Browser.Name
+        SetDefault    = $chkDefaultBrowser.Checked
+        Apps          = @($s.Apps | ForEach-Object { $_.Id })
+        Options       = $s.Opt
+        Look          = $s.Look
+        Power         = [ordered]@{
+            Enabled   = $chkPower.Checked
+            MonitorAC = $TimeoutMinutes[$cbMonAC.SelectedIndex]; SleepAC = $TimeoutMinutes[$cbSlpAC.SelectedIndex]
+            MonitorDC = $TimeoutMinutes[$cbMonDC.SelectedIndex]; SleepDC = $TimeoutMinutes[$cbSlpDC.SelectedIndex]
+        }
+        Upgrade       = $chkUpgrade.Checked
+        WindowsUpdate = $chkWU.Checked
+        Drivers       = $chkDrivers.Checked
+        AutoReboot    = $chkAutoReboot.Checked
+    }
+}
+function Set-Config($cfg) {
+    if ($cfg.Browser) { foreach ($r in $browserRadios) { if ($r.Tag.Name -eq $cfg.Browser) { $r.Checked = $true } } }
+    if ($null -ne $cfg.SetDefault) { $chkDefaultBrowser.Checked = [bool]$cfg.SetDefault }
+    if ($null -ne $cfg.Apps) { $ids = @($cfg.Apps); foreach ($c in $appChecks) { $c.Checked = ($ids -contains $c.Tag.Id) } }
+    if ($cfg.Options) { foreach ($k in @($optChecks.Keys)) { $v = $cfg.Options.$k; if ($null -ne $v) { $optChecks[$k].Checked = [bool]$v } } }
+    if ($cfg.Look) {
+        foreach ($pair in @(@('Theme', $cbTheme), @('Align', $cbAlign), @('Search', $cbSearch))) {
+            $v = $cfg.Look.($pair[0]); if ($null -ne $v -and [int]$v -lt $pair[1].Items.Count) { $pair[1].SelectedIndex = [int]$v }
+        }
+        foreach ($k in $LookChecks) { $v = $cfg.Look.$k; if ($null -ne $v) { $lookChk[$k].Checked = [bool]$v } }
+    }
+    if ($cfg.Power) {
+        if ($null -ne $cfg.Power.Enabled) { $chkPower.Checked = [bool]$cfg.Power.Enabled }
+        foreach ($pair in @(@('MonitorAC', $cbMonAC), @('SleepAC', $cbSlpAC), @('MonitorDC', $cbMonDC), @('SleepDC', $cbSlpDC))) {
+            $v = $cfg.Power.($pair[0])
+            if ($null -ne $v) { $i = [array]::IndexOf($TimeoutMinutes, [int]$v); if ($i -ge 0) { $pair[1].SelectedIndex = $i } }
+        }
+    }
+    foreach ($pair in @(@('Upgrade', $chkUpgrade), @('WindowsUpdate', $chkWU), @('Drivers', $chkDrivers), @('AutoReboot', $chkAutoReboot))) {
+        $v = $cfg.($pair[0]); if ($null -ne $v) { $pair[1].Checked = [bool]$v }
+    }
+}
+function Import-Config([string]$path) {
+    try {
+        $cfg = Get-Content -LiteralPath $path -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json
+        Set-Config $cfg
+        $script:CfgName = [IO.Path]::GetFileName($path)
+        $lblCfg.Text = T 'cfgLoaded' $script:CfgName
+        return $true
+    } catch {
+        [System.Windows.Forms.MessageBox]::Show((T 'cfgError' "$path`n$($_.Exception.Message)"), $AppName, 'OK', 'Warning') | Out-Null
+        return $false
+    }
+}
+
+# Notice in the header when a newer release exists (only for the downloaded file; irm always gets the latest)
+function Find-Update {
+    if (-not $SetupFile) { return }
+    try {
+        $rel = Invoke-RestMethod -Uri 'https://api.github.com/repos/Floki89/FreshWin/releases/latest' -TimeoutSec 4 -UseBasicParsing
+        $latest = [version]($rel.tag_name.TrimStart('v'))
+        if ($latest -gt [version]$AppVersion) {
+            $lnkUpdate.Text = T 'updateAvail' $latest; $lnkUpdate.Visible = $true
+        }
+    } catch {}
+}
+
+function Update-Title {
+    $pct = [int](100 * $progress.Value / [Math]::Max(1, $progress.Maximum))
+    $min = [int][Math]::Floor(((Get-Date) - $script:StartTime).TotalMinutes)
+    $form.Text = "$AppName – $pct % – $min min"
 }
 
 function Build-Summary {
@@ -1164,6 +1402,7 @@ function Build-Summary {
     $mark = '[ ]'; if ($s.WU)      { $mark = '[x]' }; $t += "  $mark $(T 'sumWU')"
     if ($s.Drivers) { $t += " ($(T 'sumDrivers'))" }
     $t += $nl
+    $mark = '[ ]'; if ($s.AutoReboot) { $mark = '[x]' }; $t += "  $mark $(T 'sumAutoReboot')" + $nl
     $t += $nl + (T 'sumNote')
     return $t
 }
@@ -1171,6 +1410,8 @@ function Build-Summary {
 function Show-Page([int]$i) {
     for ($j = 0; $j -lt $pages.Count; $j++) { $pages[$j].Visible = ($j -eq $i) }
     $lblStep.Text     = T $titles[[Math]::Min($i, $PgRun)]
+    $script:page = $i
+    if ($i -eq 1) { Find-Installed; Update-Count }
     $btnBack.Enabled  = ($i -gt 0 -and $i -lt $PgRun)
     $btnBack.Visible  = ($i -lt $PgRun)
     if ($i -eq $PgSummary) {
@@ -1184,7 +1425,9 @@ function Show-Page([int]$i) {
 
 function Apply-Language {
     foreach ($e in $script:LocCtl) { Set-Text $e.Ctl (T $e.Key) }
-    foreach ($l in $infoLabels) { if ($script:Lang -eq 'de') { Set-Text $l $l.Tag.De } else { Set-Text $l $l.Tag.En } }
+    foreach ($l in $infoLabels) { Set-InfoText $l }
+    if ($script:CfgName) { $lblCfg.Text = T 'cfgLoaded' $script:CfgName }
+    Update-AppLayout
     foreach ($cb in $comboBoxes) { Fill-Combo $cb }
     $lblCurName.Text = T 'currentName' $env:COMPUTERNAME
     if ($script:page -lt $PgRun) { Show-Page $script:page }
@@ -1194,12 +1437,14 @@ function Invoke-Setup {
     $s = Get-Selection
     $o = $s.Opt
     $script:Running = $true
-    $btnNext.Enabled = $false; $btnCancel.Enabled = $false; $cbLang.Enabled = $false
+    $btnNext.Enabled = $false; $btnCancel.Enabled = $false; $cbLang.Enabled = $false; $btnBack.Visible = $false
+    $script:StartTime = Get-Date
+    $script:StatusPrefix = ''
 
     $total = 8 + $s.Apps.Count
     if ($s.Browser.Id) { $total++ }
     $progress.Maximum = $total; $progress.Value = 0
-    function Step { if ($progress.Value -lt $progress.Maximum) { $progress.Value++ } }
+    function Step { if ($progress.Value -lt $progress.Maximum) { $progress.Value++ }; Update-Title }
 
     $mode = ''; if ($DryRun) { $mode = T 'logTestMode' }
     Log "===== $AppName $AppVersion $mode ====="
@@ -1207,6 +1452,10 @@ function Invoke-Setup {
     $script:RebootNeeded = $false
     Set-KeepAwake $true
     Log (T 'logAwake')
+    if ($script:AutoMode) {
+        Log (T 'logAuto')
+        foreach ($w in (Get-Warnings)) { Log "  [!] $w" }
+    }
 
     # 1) Restore point
     if ($o.Restore) {
@@ -1275,10 +1524,13 @@ function Invoke-Setup {
     Step
 
     # 3) Programs
+    $n = 0
     foreach ($a in $allApps) {
+        $n++; $script:StatusPrefix = "($n/$($allApps.Count)) "
         if ($wingetOk) { Install-App $a }
         Step
     }
+    $script:StatusPrefix = ''
 
     # 4) Default browser
     if ($s.SetDefault) {
@@ -1462,9 +1714,10 @@ try {
     # Finish
     $progress.Value = $progress.Maximum
     Log (T 'logDone')
+    $script:Running = $false   # keep the final status text from now on
     if ($script:Errors.Count -gt 0) {
         Log (T 'logProblems' ($script:Errors -join ', '))
-        $lblRun.Text = T 'runDoneErrors' $script:Errors.Count
+        $lblRun.Text = T 'runDoneErrors' $script:Errors.Count ($script:Errors -join ', ')
         $lblRun.ForeColor = [System.Drawing.Color]::FromArgb(180, 60, 0)
     } else {
         $lblRun.Text = T 'runDone'
@@ -1481,15 +1734,31 @@ try {
         else { Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue }   # Windows restarts it automatically
     }
 
-    if ($s.SetDefault) {
+    $script:RebootPending = $false
+    if ($s.AutoReboot) {
+        if ($DryRun) { Log (T 'logRebootTest') }
+        else {
+            & shutdown.exe /r /t 120 /c "$AppName" 2>&1 | Out-Null
+            $script:RebootPending = $true
+            Log (T 'logReboot')
+            $lblRun.Text = T 'runRebootSoon'
+        }
+    }
+
+    if ($s.SetDefault -and -not $script:RebootPending) {
         if ($DryRun) { Log (T 'logSettingsTest') }
         else { Start-Process 'ms-settings:defaultapps' }
     }
 
-    $script:Running = $false
+    $form.Text = "$AppName $AppVersion"
     $btnCancel.Text = T 'btnClose'; $btnCancel.Enabled = $true
     $btnNext.Text = T 'btnReboot'; $btnNext.Enabled = $true
+    if ($script:RebootPending) { $btnNext.Text = T 'btnAbortReboot' }
+    $btnBack.Text = T 'btnLog'; $btnBack.Enabled = $true; $btnBack.Visible = $true
     $script:page = $PgDone
+    # Get attention: the setup may have run for an hour in the background
+    try { [System.Media.SystemSounds]::Asterisk.Play() } catch {}
+    $form.TopMost = $true; $form.Activate(); $form.TopMost = $false
 }
 
 $cbLang.Add_SelectedIndexChanged({
@@ -1502,7 +1771,10 @@ $form.Add_FormClosing({
         [System.Windows.Forms.MessageBox]::Show((T 'msgRunning'), $AppName, 'OK', 'Information') | Out-Null
     }
 })
-$btnBack.Add_Click({ if ($script:page -gt 0) { Show-Page ($script:page - 1) } })
+$btnBack.Add_Click({
+    if ($script:page -eq $PgDone) { Start-Process notepad.exe -ArgumentList "`"$script:LogFile`"" }
+    elseif ($script:page -gt 0) { Show-Page ($script:page - 1) }
+})
 $btnCancel.Add_Click({ $form.Close() })
 $btnNext.Add_Click({
     switch ($script:page) {
@@ -1530,6 +1802,12 @@ $btnNext.Add_Click({
             Invoke-Setup
         }
         $PgDone {
+            if ($script:RebootPending) {
+                & shutdown.exe /a 2>&1 | Out-Null
+                $script:RebootPending = $false
+                $btnNext.Text = T 'btnReboot'
+                return
+            }
             if ($DryRun) {
                 [System.Windows.Forms.MessageBox]::Show((T 'msgTestNoReboot'), $AppName) | Out-Null
             } else {
@@ -1538,6 +1816,33 @@ $btnNext.Add_Click({
             }
         }
         default { Show-Page ($script:page + 1) }
+    }
+})
+
+# Saved selection: /config:<file>, otherwise FreshWin.json next to the script
+$script:CfgName = $null
+$cfgPath = $null
+if ($ArgLine -match '[/-]config[:=](?:"([^"]+)"|(\S+))') {
+    $cfgPath = $Matches[1]; if (-not $cfgPath) { $cfgPath = $Matches[2] }
+} elseif ($SetupFile) {
+    $auto = Join-Path (Get-ConfigDir) 'FreshWin.json'
+    if (Test-Path -LiteralPath $auto) { $cfgPath = $auto }
+}
+$cfgOk = $false
+if ($cfgPath) { $cfgOk = Import-Config $cfgPath }
+$AutoRun = $ArgLine -match '(^|\s)[/-]auto(\s|$)'
+$script:AutoMode = $false
+
+$form.Add_Shown({
+    Find-Update
+    if ($AutoRun) {
+        if (-not $cfgOk) {
+            [System.Windows.Forms.MessageBox]::Show((T 'autoNoConfig'), $AppName, 'OK', 'Warning') | Out-Null
+            return
+        }
+        $script:AutoMode = $true
+        Show-Page $PgRun
+        Invoke-Setup
     }
 })
 

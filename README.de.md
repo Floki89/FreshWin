@@ -1,107 +1,202 @@
+<div align="center">
+
 # FreshWin
+
+**Einen frisch installierten Windows‑11‑PC in einem Rutsch einrichten – Programme, Aufräumen, Darstellung und Updates in einem einfachen Assistenten.**
+
+[![Neueste Version](https://img.shields.io/github/v/release/Floki89/FreshWin?label=release&color=005493)](https://github.com/Floki89/FreshWin/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Floki89/FreshWin/total?color=005493)](https://github.com/Floki89/FreshWin/releases)
+[![Lizenz: MIT](https://img.shields.io/github/license/Floki89/FreshWin?color=005493)](LICENSE)
+![Windows 11](https://img.shields.io/badge/Windows-11-0078D4?logo=windows11&logoColor=white)
+![PowerShell 5.1](https://img.shields.io/badge/PowerShell-5.1-5391FE?logo=powershell&logoColor=white)
 
 [English](README.md) | **Deutsch**
 
-Ein grafischer Einrichtungsassistent für frisch installierte Windows‑11‑PCs, in einer einzigen `.bat`-Datei.
-Browser und Programme auswählen, Windows aufräumen, Computername und Energieoptionen setzen,
-alle Updates installieren, fertig. Keine Installation, keine Abhängigkeiten.
+<img src="docs/programs-de.png" width="720" alt="FreshWin – Programmauswahl mit Profilen, Suche und Markierung installierter Programme">
 
-| | |
-|---|---|
-| ![Browserauswahl](docs/browser-de.png) | ![Programmauswahl mit Profilen](docs/programs-de.png) |
-| ![Windows aufräumen](docs/cleanup-de.png) | ![Darstellung](docs/appearance-de.png) |
+</div>
+
+## Inhalt
+
+- [Schnellstart](#schnellstart)
+- [Funktionen](#funktionen)
+- [Screenshots](#screenshots)
+- [Benutzung](#benutzung)
+- [Mehrere PCs einrichten](#mehrere-pcs-einrichten)
+- [Voraussetzungen](#voraussetzungen)
+- [Häufige Fragen](#häufige-fragen)
+- [Anpassen](#anpassen)
+- [Mitmachen](#mitmachen)
+- [Haftungsausschluss](#haftungsausschluss)
+
+## Schnellstart
+
+Rechtsklick auf den Startknopf → **Terminal (Administrator)**, diese Zeile einfügen und Enter drücken:
+
+```powershell
+irm https://raw.githubusercontent.com/Floki89/FreshWin/main/FreshWin.bat | iex
+```
+
+Lieber eine Datei? **[FreshWin.bat herunterladen](https://github.com/Floki89/FreshWin/releases/latest/download/FreshWin.bat)**, doppelklicken und die Adminabfrage bestätigen.
+
+> [!TIP]
+> Erst einmal sehen, was passieren würde? Im **Testmodus** wird nichts verändert: `FreshWin.bat /test`
 
 ## Funktionen
 
-- **Browser**: Firefox, Chrome, Brave, Vivaldi oder Edge behalten, auf Wunsch als Standardbrowser
-- **77 Programme** in 11 Kategorien, still installiert über [winget](https://learn.microsoft.com/de-de/windows/package-manager/winget/)
-  (Laufzeitumgebungen, Büro & PDF, Kommunikation, Multimedia, Werkzeuge, Sicherheit & VPN, System & Fernwartung,
-  Entwicklung, Cloud, Gaming-Launcher, Gaming-Voice & Tools). Bereits installierte Programme werden übersprungen
-- **Gaming**: Steam, Epic, Ubisoft Connect, EA app, Battle.net, GOG, Rockstar, Amazon Games, Xbox-App,
-  Discord, TeamSpeak, Mumble, NVIDIA App, MSI Afterburner, Software für Mäuse/Headsets und mehr.
-  Wer die Xbox-App auswählt, behält beim Aufräumen die Xbox-Komponenten
-- **Profile**: *Gaming-PC* und *Büro-PC* haken mit einem Klick passende Programme an und belegen
-  die Darstellungsseite vor (die NVIDIA App nur, wenn eine NVIDIA-Grafikkarte verbaut ist)
-- **Darstellung**: Dunkel-/Hellmodus, Ausrichtung und Suche der Taskleiste, klassisches Rechtsklick-Menü,
-  versteckte Dateien anzeigen, Copilot-Schaltfläche ausblenden, „Task beenden“ in der Taskleiste,
-  NumLock beim Start, Mausbeschleunigung aus, Einrastfunktion-Abfrage aus
-- **Windows aufräumen**: entfernt vorinstallierte Consumer-Apps (Xbox, Bing News, Solitaire, Clipchamp …),
-  schaltet Werbung, Vorschläge, die Bing-Suche im Startmenü und Widgets ab, setzt die Telemetrie auf Minimum,
-  zeigt Dateiendungen an und deaktiviert den Schnellstart
-- **Neue Benutzerprofile** erhalten dieselben Einstellungen (über das Standardprofil)
-- **Grundeinrichtung**: Computer umbenennen, Zeiten für Bildschirm aus und Energiesparmodus (Netz und Akku)
-- **Updates**: `winget upgrade --all` und Windows Update, auf Wunsch mit Treibern, in bis zu 3 Durchgängen
-- **Absicherung**: vor allen Änderungen wird ein Wiederherstellungspunkt erstellt, und eine Zusammenfassung zeigt vor dem Start alles an
-- **Für frische PCs gemacht**: verhindert den Energiesparmodus während des Setups, wartet auf winget, versucht es
-  erneut, wenn Windows Update gerade installiert, überspringt hängende Installer nach 20 Minuten, warnt bei fehlendem
-  Internet, Akkubetrieb oder fremdem Adminkonto und läuft ohne Konsolenfenster, das man versehentlich schließen könnte
-- **Logdatei** neben dem Skript (auf dem Desktop beim Start per Ein-Zeilen-Befehl)
-- **Deutsch und Englisch**, automatisch erkannt und im Fenster umschaltbar
-- **Testmodus**: zeigt genau, was passieren *würde*, und ändert nichts
+**Programme**
+- 77 Programme in 11 Kategorien, still installiert über [winget](https://learn.microsoft.com/de-de/windows/package-manager/winget/) – auch Apps aus dem Microsoft Store
+- Profile **Gaming-PC** und **Büro-PC** haken passende Programme mit einem Klick an
+- Suchfeld, Anzahl der ausgewählten Programme, bereits installierte Programme werden markiert
+- Browser nach Wahl (Firefox, Chrome, Brave, Vivaldi oder Edge), auf Wunsch als Standardbrowser
+
+**Windows aufräumen**
+- Entfernt vorinstallierte Consumer-Apps (Xbox, Bing News, Solitaire, Clipchamp …) – Store, Fotos, Rechner und andere nützliche Apps bleiben
+- Schaltet Werbung, Vorschläge, die Bing-Suche im Startmenü und Widgets ab, setzt die Telemetrie auf Minimum
+- Zeigt Dateiendungen an, deaktiviert den Schnellstart
+- Übernimmt die Einstellungen auch für künftige Benutzerprofile
+
+**Darstellung**
+- Dunkel- oder Hellmodus, Ausrichtung und Suchfeld der Taskleiste
+- Klassisches Rechtsklick-Menü, versteckte Dateien anzeigen, Copilot-Schaltfläche ausblenden, „Task beenden“ in der Taskleiste
+- NumLock beim Start, Mausbeschleunigung aus, keine Einrastfunktion-Abfrage
+
+**Grundeinrichtung und Updates**
+- Computer umbenennen, Zeiten für Bildschirm aus und Energiesparmodus
+- Aktualisiert alle Programme (`winget upgrade --all`) und installiert Windows Updates, auf Wunsch mit Treibern
+- Auf Wunsch automatischer Neustart am Ende – ideal, wenn das Setup über Nacht läuft
+
+**Für frische PCs gemacht**
+- Wiederherstellungspunkt vor allen Änderungen, Zusammenfassung vor dem Start
+- Verhindert den Energiesparmodus, wartet nach der ersten Anmeldung auf winget, versucht es erneut, wenn
+  Windows Update gerade installiert, überspringt hängende Installer
+- Warnt bei fehlendem Internet, Akkubetrieb oder fremdem Adminkonto
+- Kein Konsolenfenster, das man versehentlich schließen könnte; ausführliche Logdatei
+- Deutsch und Englisch, automatisch erkannt und jederzeit umschaltbar
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Browser](docs/browser-de.png) | ![Programme](docs/programs-de.png) |
+| ![Windows aufräumen](docs/cleanup-de.png) | ![Darstellung](docs/appearance-de.png) |
 
 ## Benutzung
 
 ### Weg 1: ein Befehl, kein Download (empfohlen)
 
 1. Rechtsklick auf den Startknopf → **Terminal (Administrator)**
-2. Diese Zeile einfügen und Enter drücken:
+2. Den Befehl aus dem [Schnellstart](#schnellstart) einfügen und Enter drücken
+3. Das Terminal-Fenster offen lassen, solange FreshWin läuft
 
-   ```powershell
-   irm https://raw.githubusercontent.com/Floki89/FreshWin/main/FreshWin.bat | iex
-   ```
-
-Kein Download, keine SmartScreen-Warnung. Das Terminal-Fenster offen lassen, solange FreshWin läuft.
-Testmodus: vorher `$env:SETUP_ARGS = '/test'` ausführen.
+Kein Download und keine SmartScreen-Warnung. Die Logdatei landet auf dem Desktop.
 
 ### Weg 2: herunterladen
 
-1. [`FreshWin.bat`](https://github.com/Floki89/FreshWin/releases/latest/download/FreshWin.bat) herunterladen (immer die neueste Version).
-2. Doppelklicken und die Adminabfrage bestätigen.
-3. Dem Assistenten folgen.
+1. [FreshWin.bat herunterladen](https://github.com/Floki89/FreshWin/releases/latest/download/FreshWin.bat) (immer die neueste Version)
+2. Doppelklicken und die Adminabfrage bestätigen
+3. Dem Assistenten folgen
 
 > [!NOTE]
-> Edge und Windows SmartScreen können bei einer heruntergeladenen `.bat` warnen. In Edge *Behalten* wählen, dann
-> *Weitere Informationen → Trotzdem ausführen*. Im Zweifel das Skript vorher lesen: Es ist reiner Text.
+> Edge und Windows SmartScreen können bei einer heruntergeladenen `.bat` warnen: In Edge *Behalten* wählen, dann
+> *Weitere Informationen → Trotzdem ausführen*. FreshWin ist eine reine Textdatei – jede Zeile lässt sich vorher lesen.
 
 ### Weg 3: USB-Stick
 
-`FreshWin.bat` auf einen USB-Stick kopieren und am neuen PC doppelklicken. Praktisch, wenn man mehrere PCs einrichtet.
+`FreshWin.bat` auf einen USB-Stick kopieren und am neuen PC doppelklicken.
 
 ### Optionen
 
-| Aufruf | Wirkung |
+| Option | Wirkung |
 |---|---|
-| `FreshWin.bat /test` | Testmodus, keine Adminrechte nötig, es wird nichts verändert |
-| `FreshWin.bat /lang:de` / `/lang:en` | Sprache festlegen |
-| Datei in `FreshWin-TEST.bat` umbenennen | Testmodus per Doppelklick |
+| `/test` | Testmodus: zeigt, was passieren würde, ändert nichts, keine Adminrechte nötig |
+| `/lang:de`, `/lang:en` | Sprache festlegen |
+| `/config:datei.json` | Gespeicherte Auswahl laden |
+| `/auto` | Sofort mit der gespeicherten Auswahl starten, ohne Klicks |
+
+Auch eine Umbenennung in `FreshWin-TEST.bat` startet den Testmodus. Beim Ein-Zeilen-Befehl vorher
+`$env:SETUP_ARGS = '/test'` ausführen.
+
+## Mehrere PCs einrichten
+
+1. Einmal die Auswahl treffen und auf der Zusammenfassung **Auswahl speichern …** klicken
+2. Als `FreshWin.json` neben `FreshWin.bat` speichern (z. B. auf einem USB-Stick)
+3. Auf jedem neuen PC lädt FreshWin sie automatisch – kurz prüfen und *Starten* klicken
+
+Komplett ohne Klicks: `FreshWin.bat /auto` startet das Setup sofort. Zusammen mit
+*Nach Abschluss automatisch neu starten* ist der PC am nächsten Morgen fertig.
 
 ## Voraussetzungen
 
-- Windows 11 (das meiste funktioniert auch unter Windows 10). **Nicht im S-Modus**: den S-Modus vorher verlassen
-  (Einstellungen → System → Aktivierung), dort laufen keine Skripte
+- Windows 11 (das meiste funktioniert auch unter Windows 10)
+- **Nicht im S-Modus** – dort laufen keine Skripte. Den S-Modus vorher unter *Einstellungen → System → Aktivierung* verlassen
 - Administratorrechte (außer im Testmodus)
 - Internetverbindung. Fehlt der WLAN-Treiber, hilft ein LAN-Kabel oder USB-Tethering mit dem Handy
-- winget (*App-Installer*) ist bei Windows 11 vorinstalliert. Direkt nach der ersten Anmeldung wartet FreshWin bis zu
-  3 Minuten, bis es bereit ist, und installiert bei Bedarf eine aktuelle Version
+- winget (*App-Installer*) ist bei Windows 11 vorinstalliert. Direkt nach der ersten Anmeldung wartet FreshWin, bis es
+  bereit ist, und installiert bei Bedarf eine aktuelle Version
+
+## Häufige Fragen
+
+<details>
+<summary><b>Was genau ändert FreshWin?</b></summary>
+
+Nur das, was angehakt ist. Die Zusammenfassung zeigt vor dem Start alles an, und der Testmodus (`/test`) listet jeden
+einzelnen Befehl und Registry-Wert auf, ohne etwas zu ändern. Alle Änderungen sind normale Windows-Einstellungen.
+</details>
+
+<details>
+<summary><b>Wie mache ich die Änderungen rückgängig?</b></summary>
+
+FreshWin legt vor allen Änderungen einen Wiederherstellungspunkt an (*Systemsteuerung → Wiederherstellung →
+Systemwiederherstellung öffnen*). Einstellungen lassen sich außerdem jederzeit in den Windows-Einstellungen
+zurückstellen, Programme wie gewohnt deinstallieren.
+</details>
+
+<details>
+<summary><b>Ein Programm wurde nicht installiert – warum?</b></summary>
+
+Die Logdatei (Knopf **Log öffnen** am Ende) nennt den Grund. Häufig: Der Installer hing und wurde nach 20 Minuten
+abgebrochen, das Programm verweigert Adminrechte, oder Windows braucht erst einen Neustart. Diese Programme von Hand
+installieren oder FreshWin nach dem Neustart erneut starten – bereits installierte Programme werden übersprungen.
+</details>
+
+<details>
+<summary><b>Warum ist mein Browser noch nicht der Standardbrowser?</b></summary>
+
+Windows 11 lässt kein Programm den Standardbrowser still setzen. Am Ende öffnet FreshWin
+*Einstellungen → Standard-Apps* – dort einfach den Browser auswählen.
+</details>
+
+<details>
+<summary><b>Wo liegt die Logdatei?</b></summary>
+
+Neben `FreshWin.bat`, beim Start per Ein-Zeilen-Befehl auf dem Desktop (`FreshWin_<PC-Name>_<Datum>.log`).
+</details>
+
+<details>
+<summary><b>Kann ich FreshWin später noch einmal ausführen?</b></summary>
+
+Ja. Installierte Programme werden übersprungen, Einstellungen einfach erneut gesetzt. Ein zweiter Lauf nach dem
+ersten Neustart ist ideal, um die restlichen Windows Updates mitzunehmen.
+</details>
 
 ## Anpassen
 
-Alle Listen stehen oben im PowerShell-Teil von `FreshWin.bat`:
+Alles wird oben im PowerShell-Teil von `FreshWin.bat` eingestellt:
 
-- `$Browsers` enthält die Browser
-- `$AppCatalog` enthält die Programme nach Kategorie. `Id` ist die winget-ID (finden mit `winget search <Name>`;
-  `Source = 'msstore'` für Apps aus dem Microsoft Store),
-  `Def = $true` hakt das Programm beim Start an, `De`/`En` enthalten die Kurzbeschreibungen
-- `$Profiles` enthält die Profile (winget-IDs und Vorgaben für die Darstellung)
-- `$AppxRemove` enthält die vorinstallierten Apps, die entfernt werden
-- `$Strings` enthält alle Texte (Deutsch und Englisch)
+| Variable | Inhalt |
+|---|---|
+| `$Browsers` | Browser auf der ersten Seite |
+| `$AppCatalog` | Programme nach Kategorie. `Id` ist die winget-ID (`winget search <Name>`), `Source = 'msstore'` für Store-Apps, `Def = $true` hakt es vor, `De`/`En` sind die Kurzbeschreibungen |
+| `$Profiles` | Die Profile: winget-IDs und Vorgaben für die Darstellung |
+| `$AppxRemove` | Vorinstallierte Apps, die entfernt werden |
+| `$Strings` | Alle Texte auf Deutsch und Englisch |
 
-## Hinweise
+## Mitmachen
 
-- Windows 11 lässt den Standardbrowser für den aktuellen Benutzer nicht per Skript setzen. FreshWin
-  hinterlegt ihn (wo möglich) für neue Profile und öffnet am Ende *Einstellungen → Standard-Apps*.
-- Telemetriestufe 1 („Erforderlich“) ist unter Windows Home/Pro das Minimum.
-- Alle Änderungen sind normale Windows-Einstellungen und lassen sich in den Einstellungen oder über den Wiederherstellungspunkt zurücknehmen.
+Fehlt ein Programm oder ist etwas kaputt? [Issue anlegen](https://github.com/Floki89/FreshWin/issues/new/choose) –
+für beides gibt es Vorlagen. Pull Requests sind willkommen; Änderungen bitte vorher im Testmodus prüfen.
+Was sich zwischen den Versionen geändert hat, steht im [Changelog](CHANGELOG.md).
 
 ## Haftungsausschluss
 
@@ -111,4 +206,5 @@ Alle Listen stehen oben im PowerShell-Teil von `FreshWin.bat`:
 
 ## Lizenz
 
-[MIT](LICENSE)
+[MIT](LICENSE) – gilt für FreshWin selbst. Die installierten Programme lädt winget direkt von den Herstellern,
+für sie gelten deren eigene Lizenzen.

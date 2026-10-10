@@ -5,3 +5,6 @@ FreshWin_*.log
 # Test copies
 *-TEST.bat
 *_TEST.bat
+
+# Saved selections of the user (FreshWin.json next to the script)
+FreshWin.json
