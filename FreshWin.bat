@@ -41,7 +41,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
 $AppName    = 'FreshWin'
 $RepoUrl    = 'https://github.com/Floki89/FreshWin'
-$AppVersion = '1.4.0'
+$AppVersion = '1.4.1'
 $SetupFile  = $env:SETUP_FILE
 $ArgLine    = [string]$env:SETUP_ARGS
 $DryRun     = ($ArgLine -match '(^|\s)[/-]test(\s|$)') -or
@@ -101,6 +101,10 @@ de = @{
     testBadge      = '  TESTMODUS – es wird nichts verändert  '
     btnCancel      = 'Abbrechen';      btnBack  = '< Zurück';   btnNext   = 'Weiter >'
     btnStart       = 'Jetzt starten';  btnStartTest = 'Test starten'
+    btnRunning     = 'Läuft …'
+    logAppxPartial = '  - {0} : für diesen Benutzer entfernt, für neue Benutzer nicht ({1})'
+    logAppxFailed  = '  [!] {0} : nicht entfernt – {1}'
+    logUpgradeAgain = '  winget wurde unterbrochen (z. B. weil es sich selbst aktualisiert hat) – zweiter Versuch …'
     btnClose       = 'Schließen';      btnReboot = 'Neu starten'
     btnAll         = 'Alle';           btnNone   = 'Keine'
     profLabel      = 'Profil:'
@@ -233,7 +237,7 @@ de = @{
     logUpgradeList = 'Verfügbare Programm-Updates (winget upgrade) …'
     logUpgradeTest = '  [TEST] würde ausführen: winget upgrade --all --silent …'
     logUpgrade     = 'Aktualisiere installierte Programme (winget upgrade --all) …'
-    logUpgradeErr  = '  [!] Nicht alle Updates erfolgreich (Exitcode {0}) – Details im Log'
+    logUpgradeErr  = '  [!] Nicht alle Updates erfolgreich (Fehler {0}) – Details im Log'
     logWUSearch    = 'Suche Windows Updates (nur Suche, kann einige Minuten dauern) …'
     logWUInstall   = 'Windows Updates suchen, herunterladen und installieren (kann lange dauern) …'
     logWUNone      = '  Keine Windows Updates ausstehend'
@@ -288,6 +292,10 @@ en = @{
     testBadge      = '  TEST MODE – nothing will be changed  '
     btnCancel      = 'Cancel';         btnBack  = '< Back';     btnNext   = 'Next >'
     btnStart       = 'Start now';      btnStartTest = 'Start test'
+    btnRunning     = 'Running …'
+    logAppxPartial = '  - {0} : removed for this user, not for new users ({1})'
+    logAppxFailed  = '  [!] {0} : not removed – {1}'
+    logUpgradeAgain = '  winget was interrupted (e.g. because it updated itself) – second attempt …'
     btnClose       = 'Close';          btnReboot = 'Restart'
     btnAll         = 'All';            btnNone   = 'None'
     profLabel      = 'Profile:'
@@ -420,7 +428,7 @@ en = @{
     logUpgradeList = 'Available program updates (winget upgrade) …'
     logUpgradeTest = '  [TEST] would run: winget upgrade --all --silent …'
     logUpgrade     = 'Updating installed programs (winget upgrade --all) …'
-    logUpgradeErr  = '  [!] Not all updates succeeded (exit code {0}) – see log for details'
+    logUpgradeErr  = '  [!] Not all updates succeeded (error {0}) – see log for details'
     logWUSearch    = 'Searching for Windows updates (search only, may take a few minutes) …'
     logWUInstall   = 'Searching, downloading and installing Windows updates (can take a while) …'
     logWUNone      = '  No pending Windows updates'
@@ -687,6 +695,12 @@ function Get-Warnings {
     return ,$w
 }
 
+# Details for the log file only (not shown in the window)
+function Log-Detail([string]$text) {
+    try { Add-Content -LiteralPath $script:LogFile -Value $text -Encoding UTF8 } catch {}
+}
+function Format-Code([int]$rc) { return '0x{0:X8}' -f $rc }
+
 function Get-AppId($a) {
     if ($script:Lang -eq 'de' -and $a.IdDe) { return $a.IdDe }
     return $a.Id
@@ -736,7 +750,7 @@ function Run-Proc([string]$File, [string]$Arguments, [switch]$Always, [int]$Time
 
 # Install one program with winget. Handles the typical situations on a fresh PC:
 # reboot required, another installation running (Windows Update), hanging installers.
-$InstallTimeoutMin = 20
+$InstallTimeoutMin = 30
 function Install-App($a) {
     $id = Get-AppId $a
     Log (T 'logInstall' $a.Name $id)
@@ -1438,6 +1452,7 @@ function Invoke-Setup {
     $o = $s.Opt
     $script:Running = $true
     $btnNext.Enabled = $false; $btnCancel.Enabled = $false; $cbLang.Enabled = $false; $btnBack.Visible = $false
+    $btnNext.Text = T 'btnRunning'
     $script:StartTime = Get-Date
     $script:StatusPrefix = ''
 
@@ -1573,6 +1588,7 @@ function Invoke-Setup {
         $prov = @()
         if ($IsAdmin) { $prov = @(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue) }
         $keep = @($s.Apps | ForEach-Object { $_.Keep })
+        $removed = @()
         foreach ($n in $AppxRemove) {
             if ($keep -contains $n) { continue }
             if ($IsAdmin) { $pkg = @(Get-AppxPackage -AllUsers -Name $n -ErrorAction SilentlyContinue) }
@@ -1583,12 +1599,40 @@ function Invoke-Setup {
                 continue
             }
             if ($DryRun) { Log (T 'logAppxWould' $n); continue }
-            try {
-                $pkg | Remove-AppxPackage -AllUsers -ErrorAction Stop
-                $pp  | Remove-AppxProvisionedPackage -Online -ErrorAction Stop | Out-Null
-                Log (T 'logAppxRemoved' $n)
-            } catch { Log "  [!] $n : $($_.Exception.Message)" }
-            [System.Windows.Forms.Application]::DoEvents()
+            $err = @()
+            foreach ($p in $pkg) {
+                try { Remove-AppxPackage -Package $p.PackageFullName -AllUsers -ErrorAction Stop }
+                catch {
+                    Log-Detail "  $n -AllUsers: $($_.Exception.Message) [0x$('{0:X8}' -f $_.Exception.HResult)]"
+                    # fall back to the current user
+                    try { Remove-AppxPackage -Package $p.PackageFullName -ErrorAction Stop }
+                    catch { $err += $_.Exception.Message; Log-Detail "  $n current user: $($_.Exception.Message)" }
+                }
+                [System.Windows.Forms.Application]::DoEvents()
+            }
+            foreach ($q in $pp) {
+                try { Remove-AppxProvisionedPackage -Online -PackageName $q.PackageName -ErrorAction Stop | Out-Null }
+                catch {
+                    Log-Detail "  $n provisioned: $($_.Exception.Message) [0x$('{0:X8}' -f $_.Exception.HResult)]"
+                    # fall back to dism.exe
+                    $rc = Run-Proc 'dism.exe' "/Online /NoRestart /Remove-ProvisionedAppxPackage /PackageName:$($q.PackageName)"
+                    if ($rc -ne 0) { $err += "$($_.Exception.Message) (DISM $(Format-Code $rc))" }
+                }
+                [System.Windows.Forms.Application]::DoEvents()
+            }
+            $removed += @{ Name = $n; Err = $err }
+        }
+        # Judge by the result, not by error messages: what is still there?
+        if ($removed.Count) {
+            $provLeft = @(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | ForEach-Object DisplayName)
+            foreach ($r in $removed) {
+                $userLeft = @(Get-AppxPackage -Name $r.Name -ErrorAction SilentlyContinue).Count -gt 0
+                $why = 'siehe Log'; if ($script:Lang -ne 'de') { $why = 'see log' }
+                if ($r.Err) { $why = $r.Err[0] }
+                if (-not $userLeft -and $provLeft -notcontains $r.Name) { Log (T 'logAppxRemoved' $r.Name) }
+                elseif (-not $userLeft) { Log (T 'logAppxPartial' $r.Name $why) }
+                else { Log (T 'logAppxFailed' $r.Name $why) }
+            }
         }
     }
     Step
@@ -1664,8 +1708,17 @@ function Invoke-Setup {
             Log (T 'logUpgradeTest')
         } else {
             Log (T 'logUpgrade')
-            $rc = Run-Proc 'winget' 'upgrade --all --silent --accept-package-agreements --accept-source-agreements --disable-interactivity' -TimeoutMin 60
-            if ($rc -eq 0) { Log '  OK' } else { Log (T 'logUpgradeErr' $rc) }
+            $upArgs = 'upgrade --all --silent --accept-package-agreements --accept-source-agreements --disable-interactivity'
+            $rc = Run-Proc 'winget' $upArgs -TimeoutMin 60
+            # E_ABORT: winget was ended, typically because App Installer (winget itself) was updated
+            if ((Format-Code $rc) -eq '0x80004004') {
+                Log (T 'logUpgradeAgain')
+                Wait-UI 10
+                $rc = Run-Proc 'winget' $upArgs -TimeoutMin 60
+            }
+            if ($rc -eq 0) { Log '  OK' }
+            elseif ((Format-Code $rc) -eq '0x8A150109') { Log '  OK'; $script:RebootNeeded = $true }
+            else { Log (T 'logUpgradeErr' (Format-Code $rc)) }
         }
     }
     Step
@@ -1707,7 +1760,7 @@ try {
         $first = @($script:LastOutput -split "`r?`n" | Where-Object { $_ -like 'UPDATES=*' })[0]
         if ($rc -eq 0 -and $first -eq 'UPDATES=0') { Log (T 'logWUNone') }
         elseif ($DryRun -and $rc -eq 0) { Log (T 'logWUTest') }
-        elseif ($rc -ne 0) { Log (T 'logWUErr' $rc); [void]$script:Errors.Add((T 'errWU')) }
+        elseif ($rc -ne 0) { Log (T 'logWUErr' (Format-Code $rc)); [void]$script:Errors.Add((T 'errWU')) }
     }
     Step
 

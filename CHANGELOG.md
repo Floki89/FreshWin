@@ -2,6 +2,21 @@
 
 All notable changes to FreshWin. Versions follow [semantic versioning](https://semver.org/).
 
+## [1.4.1] – 2026-10-13
+
+Fixes from the first real run on a freshly installed laptop.
+
+### Fixed
+- Removing preinstalled apps: each step runs on its own with fallbacks (current user, `dism.exe`),
+  and the result is checked afterwards – the log now says what is really gone, details go to the log file
+- `winget upgrade --all` is started a second time when winget was interrupted (`0x80004004`),
+  e.g. because it updated itself
+- Error codes are shown in hex (`0x…`) instead of large negative numbers
+
+### Changed
+- Timeout per installer raised to 30 minutes for slow connections
+- The start button shows *Running …* during setup
+
 ## [1.4.0] – 2026-10-10
 
 ### Added
@@ -47,5 +62,6 @@ All notable changes to FreshWin. Versions follow [semantic versioning](https://s
 - German and English user interface, switchable at runtime
 - Test mode (`/test`)
 
+[1.4.1]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.1
 [1.4.0]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.0
 [1.3.0]: https://github.com/Floki89/FreshWin/releases/tag/v1.3.0
