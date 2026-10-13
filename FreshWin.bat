@@ -42,7 +42,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
 $AppName    = 'FreshWin'
 $RepoUrl    = 'https://github.com/Floki89/FreshWin'
-$AppVersion = '1.4.5'
+$AppVersion = '1.4.6'
 $SetupFile  = $env:SETUP_FILE
 $ArgLine    = [string]$env:SETUP_ARGS
 $DryRun     = ($ArgLine -match '(^|\s)[/-]test(\s|$)') -or
@@ -73,7 +73,7 @@ de = @{
     logAwakeFail   = '  [!] Energiesparmodus konnte nicht blockiert werden – bitte darauf achten, dass der PC nicht einschläft.'
     logWingetWait  = '  winget ist noch nicht bereit – warte bis zu 3 Minuten (normal nach der Ersteinrichtung) …'
     logWingetVer   = '  winget {0}'
-    logWingetUpd   = '  Aktualisiere den App-Installer (winget) …'
+    logWingetUpd   = '  Aktualisiere den App-Installer (winget) – lädt ca. 300 MB inkl. benötigter Laufzeitpakete …'
     logInstallReboot = '  OK – Neustart nötig, um die Installation abzuschließen'
     logInstallBusy = '  Es läuft gerade eine andere Installation (z. B. Windows Update) – warte 60 Sekunden ({0}/3) …'
     logInstallTimeout = '  [!] Nach {0} Minuten abgebrochen – der Installer hängt vermutlich. Bitte später von Hand installieren.'
@@ -266,7 +266,7 @@ en = @{
     logAwakeFail   = '  [!] Sleep could not be blocked – please make sure the PC does not go to sleep.'
     logWingetWait  = '  winget is not ready yet – waiting up to 3 minutes (normal right after first setup) …'
     logWingetVer   = '  winget {0}'
-    logWingetUpd   = '  Updating App Installer (winget) …'
+    logWingetUpd   = '  Updating App Installer (winget) – downloads about 300 MB incl. required runtime packages …'
     logInstallReboot = '  OK – restart needed to finish the installation'
     logInstallBusy = '  Another installation is running (e.g. Windows Update) – waiting 60 seconds ({0}/3) …'
     logInstallTimeout = '  [!] Aborted after {0} minutes – the installer probably hangs. Please install it manually later.'
@@ -1530,17 +1530,38 @@ function Invoke-Setup {
         # Older than 1.11: Store source certificate errors (0x8A15005E) and missing options
         if ($wgVer -lt [version]'1.11' -and -not $DryRun) {
             Log (T 'logWingetUpd')
-            $pkg = Join-Path $env:TEMP 'AppInstaller.msixbundle'
-            $rc = Run-Proc 'curl.exe' "-L -f -s -S --max-time 600 -o `"$pkg`" https://aka.ms/getwinget" -TimeoutMin 12
+            $pkg     = Join-Path $env:TEMP 'FreshWin_AppInstaller.msixbundle'
+            $depZip  = Join-Path $env:TEMP 'FreshWin_AppInstaller_Deps.zip'
+            $depDir  = Join-Path $env:TEMP 'FreshWin_AppInstaller_Deps'
+            $rc = Run-Proc 'curl.exe' "-L -f -s -S --max-time 900 -o `"$pkg`" https://aka.ms/getwinget" -TimeoutMin 16
+            # The new App Installer needs current frameworks (VCLibs, Windows App Runtime) that a fresh
+            # Windows may not have yet - Microsoft publishes them next to each winget release
+            $deps = @()
+            $rcDeps = Run-Proc 'curl.exe' "-L -f -s -S --max-time 900 -o `"$depZip`" https://github.com/microsoft/winget-cli/releases/latest/download/DesktopAppInstaller_Dependencies.zip" -TimeoutMin 16
+            if ($rcDeps -eq 0) {
+                try {
+                    Expand-Archive -LiteralPath $depZip -DestinationPath $depDir -Force -ErrorAction Stop
+                    $arch = switch ($env:PROCESSOR_ARCHITECTURE) { 'ARM64' { 'arm64' } 'x86' { 'x86' } default { 'x64' } }
+                    $deps = @(Get-ChildItem -LiteralPath (Join-Path $depDir $arch) -Filter '*.appx' -ErrorAction Stop | ForEach-Object FullName)
+                    foreach ($d in $deps) {
+                        # "a higher version is already installed" is fine here
+                        try { Add-AppxPackage -Path $d -ErrorAction Stop } catch { Log-Detail "  dependency $([IO.Path]::GetFileName($d)): $($_.Exception.Message)" }
+                    }
+                } catch { Log-Detail "  dependencies: $($_.Exception.Message)" }
+            }
             if ($rc -eq 0) {
-                try { Add-AppxPackage -Path $pkg -ForceApplicationShutdown -ErrorAction Stop } catch { Log "  [!] $($_.Exception.Message)" }
+                try {
+                    if ($deps.Count) { Add-AppxPackage -Path $pkg -DependencyPath $deps -ForceApplicationShutdown -ErrorAction Stop }
+                    else { Add-AppxPackage -Path $pkg -ForceApplicationShutdown -ErrorAction Stop }
+                } catch { Log "  [!] $($_.Exception.Message)" }
                 Wait-UI 5
                 if (Test-Winget) {
                     Run-Proc 'winget' '--version' -Always | Out-Null
                     if ($script:LastOutput -match 'v?(\d+\.\d+)') { Log (T 'logWingetVer' $Matches[1]) }
                 }
             }
-            Remove-Item -LiteralPath $pkg -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $pkg, $depZip -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $depDir -Recurse -Force -ErrorAction SilentlyContinue
         }
         if (Test-Winget) {
             Log '  OK'

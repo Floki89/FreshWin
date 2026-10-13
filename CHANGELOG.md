@@ -2,6 +2,13 @@
 
 All notable changes to FreshWin. Versions follow [semantic versioning](https://semver.org/).
 
+## [1.4.6] – 2026-10-13
+
+### Fixed
+- Updating an old winget failed on fresh PCs because the Windows App Runtime was missing
+  (`0x80073CF3`). FreshWin now also downloads Microsoft's dependency package (VCLibs, Windows App Runtime)
+  from the winget release and installs it first
+
 ## [1.4.5] – 2026-10-13
 
 ### Fixed
@@ -88,6 +95,7 @@ Fixes from the first real run on a freshly installed laptop.
 - German and English user interface, switchable at runtime
 - Test mode (`/test`)
 
+[1.4.6]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.6
 [1.4.5]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.5
 [1.4.4]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.4
 [1.4.3]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.3
