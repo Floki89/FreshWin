@@ -42,7 +42,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
 $AppName    = 'FreshWin'
 $RepoUrl    = 'https://github.com/Floki89/FreshWin'
-$AppVersion = '1.4.6'
+$AppVersion = '1.4.7'
 $SetupFile  = $env:SETUP_FILE
 $ArgLine    = [string]$env:SETUP_ARGS
 $DryRun     = ($ArgLine -match '(^|\s)[/-]test(\s|$)') -or
@@ -104,6 +104,8 @@ de = @{
     btnCancel      = 'Abbrechen';      btnBack  = '< Zurück';   btnNext   = 'Weiter >'
     btnStart       = 'Jetzt starten';  btnStartTest = 'Test starten'
     btnRunning     = 'Läuft …'
+    logStepTimeout = 'Nach {0} Minuten abgebrochen – Windows hat nicht reagiert.'
+    logRenameReg   = '  OK über die Registry (aktiv nach Neustart)'
     logInstallCert = '  [!] Zertifikatsfehler der Store-Quelle (veraltetes winget) – die App bitte über den Microsoft Store installieren.'
     logAppxPartial = '  - {0} : für diesen Benutzer entfernt, für neue Benutzer nicht ({1})'
     logAppxFailed  = '  [!] {0} : nicht entfernt – {1}'
@@ -297,6 +299,8 @@ en = @{
     btnCancel      = 'Cancel';         btnBack  = '< Back';     btnNext   = 'Next >'
     btnStart       = 'Start now';      btnStartTest = 'Start test'
     btnRunning     = 'Running …'
+    logStepTimeout = 'Aborted after {0} minutes – Windows did not respond.'
+    logRenameReg   = '  OK via the registry (active after restart)'
     logInstallCert = '  [!] Certificate error of the Store source (outdated winget) – please install the app from the Microsoft Store.'
     logAppxPartial = '  - {0} : removed for this user, not for new users ({1})'
     logAppxFailed  = '  [!] {0} : not removed – {1}'
@@ -785,6 +789,19 @@ function Install-App($a) {
         break
     }
     [void]$script:Errors.Add($a.Name)
+}
+
+# Runs PowerShell code in a separate process with a timeout, so a Windows command that hangs
+# cannot freeze the window. Returns the exit code; $script:ExtError holds the error message.
+function Quote([string]$text) { return "'" + $text.Replace("'", "''") + "'" }
+function Invoke-External([string]$Code, [int]$TimeoutMin) {
+    $wrapped = "`$ErrorActionPreference = 'Stop'; try { $Code; exit 0 } catch { 'FW-ERROR: ' + `$_.Exception.Message; exit 1 }"
+    $b64 = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($wrapped))
+    $rc = Run-Proc 'powershell.exe' "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $b64" -TimeoutMin $TimeoutMin
+    $script:ExtError = ''
+    if ($script:TimedOut) { $script:ExtError = T 'logStepTimeout' $TimeoutMin }
+    elseif ($script:LastOutput -match 'FW-ERROR: (.+)') { $script:ExtError = $Matches[1].Trim() }
+    return $rc
 }
 
 function Test-Winget {
@@ -1491,9 +1508,9 @@ function Invoke-Setup {
             # Windows creates at most one restore point per 24 h by default - lift the limit temporarily
             $srKey = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore'
             try {
-                Enable-ComputerRestore -Drive "$env:SystemDrive\" -ErrorAction Stop
                 New-ItemProperty -Path $srKey -Name 'SystemRestorePointCreationFrequency' -Value 0 -PropertyType DWord -Force | Out-Null
-                Checkpoint-Computer -Description (T 'restoreDesc') -RestorePointType MODIFY_SETTINGS -ErrorAction Stop
+                $rc = Invoke-External "Enable-ComputerRestore -Drive $(Quote "$env:SystemDrive\"); Checkpoint-Computer -Description $(Quote (T 'restoreDesc')) -RestorePointType MODIFY_SETTINGS" 15
+                if ($rc -ne 0) { throw $script:ExtError }
                 Log '  OK'
             } catch { Log "  [!] $($_.Exception.Message)"; [void]$script:Errors.Add((T 'errRestore')) }
             finally { Remove-ItemProperty -Path $srKey -Name 'SystemRestorePointCreationFrequency' -ErrorAction SilentlyContinue }
@@ -1543,17 +1560,17 @@ function Invoke-Setup {
                     Expand-Archive -LiteralPath $depZip -DestinationPath $depDir -Force -ErrorAction Stop
                     $arch = switch ($env:PROCESSOR_ARCHITECTURE) { 'ARM64' { 'arm64' } 'x86' { 'x86' } default { 'x64' } }
                     $deps = @(Get-ChildItem -LiteralPath (Join-Path $depDir $arch) -Filter '*.appx' -ErrorAction Stop | ForEach-Object FullName)
-                    foreach ($d in $deps) {
-                        # "a higher version is already installed" is fine here
-                        try { Add-AppxPackage -Path $d -ErrorAction Stop } catch { Log-Detail "  dependency $([IO.Path]::GetFileName($d)): $($_.Exception.Message)" }
-                    }
                 } catch { Log-Detail "  dependencies: $($_.Exception.Message)" }
             }
             if ($rc -eq 0) {
-                try {
-                    if ($deps.Count) { Add-AppxPackage -Path $pkg -DependencyPath $deps -ForceApplicationShutdown -ErrorAction Stop }
-                    else { Add-AppxPackage -Path $pkg -ForceApplicationShutdown -ErrorAction Stop }
-                } catch { Log "  [!] $($_.Exception.Message)" }
+                # dependencies first ("a higher version is already installed" is fine), then App Installer
+                $code = "Add-AppxPackage -Path $(Quote $pkg) -ForceApplicationShutdown"
+                if ($deps.Count) {
+                    $depList = ($deps | ForEach-Object { Quote $_ }) -join ','
+                    $code = "foreach (`$d in @($depList)) { try { Add-AppxPackage -Path `$d } catch { } }; " +
+                            "Add-AppxPackage -Path $(Quote $pkg) -DependencyPath @($depList) -ForceApplicationShutdown"
+                }
+                if ((Invoke-External $code 10) -ne 0) { Log "  [!] $script:ExtError" }
                 Wait-UI 5
                 if (Test-Winget) {
                     Run-Proc 'winget' '--version' -Always | Out-Null
@@ -1716,8 +1733,19 @@ function Invoke-Setup {
         Log (T 'logRename' $env:COMPUTERNAME $s.NewName)
         if ($DryRun) { Log "  [TEST] Rename-Computer -NewName $($s.NewName)" }
         else {
-            try { Rename-Computer -NewName $s.NewName -Force -ErrorAction Stop; Log (T 'logRenameOK') }
-            catch { Log "  [!] $($_.Exception.Message)"; [void]$script:Errors.Add((T 'errRename')) }
+            if ((Invoke-External "Rename-Computer -NewName $(Quote $s.NewName) -Force" 2) -eq 0) { Log (T 'logRenameOK') }
+            else {
+                Log-Detail "  Rename-Computer: $script:ExtError"
+                # Fallback for PCs without a company domain: set the name directly, as the rename does internally
+                $domain = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters' -ErrorAction SilentlyContinue).Domain
+                if (-not $domain) {
+                    try {
+                        Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\ComputerName\ComputerName' -Name 'ComputerName' -Value $s.NewName -ErrorAction Stop
+                        Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters' -Name 'NV Hostname' -Value $s.NewName -ErrorAction Stop
+                        Log (T 'logRenameReg')
+                    } catch { Log "  [!] $($_.Exception.Message)"; [void]$script:Errors.Add((T 'errRename')) }
+                } else { Log "  [!] $script:ExtError"; [void]$script:Errors.Add((T 'errRename')) }
+            }
         }
     }
     Step

@@ -2,6 +2,13 @@
 
 All notable changes to FreshWin. Versions follow [semantic versioning](https://semver.org/).
 
+## [1.4.7] – 2026-10-13
+
+### Fixed
+- FreshWin froze while renaming the computer. Renaming, the restore point and the App Installer update now run
+  in a separate process with a timeout, so the window stays responsive and a hanging Windows command cannot
+  block the setup. If renaming hangs, the name is set directly in the registry (PCs without a company domain)
+
 ## [1.4.6] – 2026-10-13
 
 ### Fixed
@@ -95,6 +102,7 @@ Fixes from the first real run on a freshly installed laptop.
 - German and English user interface, switchable at runtime
 - Test mode (`/test`)
 
+[1.4.7]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.7
 [1.4.6]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.6
 [1.4.5]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.5
 [1.4.4]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.4
