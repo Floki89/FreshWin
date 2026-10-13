@@ -42,7 +42,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
 $AppName    = 'FreshWin'
 $RepoUrl    = 'https://github.com/Floki89/FreshWin'
-$AppVersion = '1.4.7'
+$AppVersion = '1.4.8'
 $SetupFile  = $env:SETUP_FILE
 $ArgLine    = [string]$env:SETUP_ARGS
 $DryRun     = ($ArgLine -match '(^|\s)[/-]test(\s|$)') -or
@@ -770,7 +770,7 @@ function Install-App($a) {
     # fail there with a certificate error (0x8A15005E) - for every program, not just Store apps
     $srcName = 'winget'; if ($a.Source) { $srcName = $a.Source }
     $src = " --source $srcName"
-    $chk = Run-Proc 'winget' "list --id $id -e$src --accept-source-agreements" -Always
+    $chk = Run-Proc 'winget' "list --id $id -e$src --accept-source-agreements" -Always -Quiet
     if ($chk -eq 0) { Log (T 'logSkipInstalled'); return }
     for ($try = 1; $try -le 3; $try++) {
         $rc = Run-Proc 'winget' "install --id $id -e$src --silent --accept-package-agreements --accept-source-agreements --disable-interactivity" -TimeoutMin $InstallTimeoutMin
@@ -795,7 +795,8 @@ function Install-App($a) {
 # cannot freeze the window. Returns the exit code; $script:ExtError holds the error message.
 function Quote([string]$text) { return "'" + $text.Replace("'", "''") + "'" }
 function Invoke-External([string]$Code, [int]$TimeoutMin) {
-    $wrapped = "`$ErrorActionPreference = 'Stop'; try { $Code; exit 0 } catch { 'FW-ERROR: ' + `$_.Exception.Message; exit 1 }"
+    # no progress/warning streams: a child PowerShell would write them as CLIXML into the log
+    $wrapped = "`$ErrorActionPreference = 'Stop'; `$ProgressPreference = 'SilentlyContinue'; `$WarningPreference = 'SilentlyContinue'; try { $Code; exit 0 } catch { 'FW-ERROR: ' + `$_.Exception.Message; exit 1 }"
     $b64 = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($wrapped))
     $rc = Run-Proc 'powershell.exe' "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $b64" -TimeoutMin $TimeoutMin
     $script:ExtError = ''
@@ -1540,7 +1541,7 @@ function Invoke-Setup {
         # Missing or too old (no --disable-interactivity etc.): install the current App Installer
         $wgVer = [version]'0.0'
         if (Test-Winget) {
-            Run-Proc 'winget' '--version' -Always | Out-Null
+            Run-Proc 'winget' '--version' -Always -Quiet | Out-Null
             if ($script:LastOutput -match 'v?(\d+\.\d+)') { $wgVer = [version]$Matches[1] }
             Log (T 'logWingetVer' $wgVer)
         }
@@ -1573,7 +1574,7 @@ function Invoke-Setup {
                 if ((Invoke-External $code 10) -ne 0) { Log "  [!] $script:ExtError" }
                 Wait-UI 5
                 if (Test-Winget) {
-                    Run-Proc 'winget' '--version' -Always | Out-Null
+                    Run-Proc 'winget' '--version' -Always -Quiet | Out-Null
                     if ($script:LastOutput -match 'v?(\d+\.\d+)') { Log (T 'logWingetVer' $Matches[1]) }
                 }
             }
@@ -1795,7 +1796,7 @@ function Invoke-Setup {
         if ($s.Drivers) { $criteria = 'IsInstalled=0 and IsHidden=0' }
         # Up to 3 rounds: some updates only show up after others are installed
         $wu = @"
-`$ErrorActionPreference = 'Stop'
+`$ErrorActionPreference = 'Stop'; `$ProgressPreference = 'SilentlyContinue'; `$WarningPreference = 'SilentlyContinue'
 try {
     `$ses = New-Object -ComObject Microsoft.Update.Session
     `$ses.ClientApplicationID = '$AppName'

@@ -2,6 +2,14 @@
 
 All notable changes to FreshWin. Versions follow [semantic versioning](https://semver.org/).
 
+## [1.4.8] – 2026-10-13
+
+First complete run on a freshly installed laptop without problems.
+
+### Changed
+- Cleaner log file: no more `#< CLIXML` blocks from child PowerShell processes, no winget tables
+  for programs that are already installed
+
 ## [1.4.7] – 2026-10-13
 
 ### Fixed
@@ -102,6 +110,7 @@ Fixes from the first real run on a freshly installed laptop.
 - German and English user interface, switchable at runtime
 - Test mode (`/test`)
 
+[1.4.8]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.8
 [1.4.7]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.7
 [1.4.6]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.6
 [1.4.5]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.5
