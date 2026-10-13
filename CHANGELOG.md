@@ -2,6 +2,11 @@
 
 All notable changes to FreshWin. Versions follow [semantic versioning](https://semver.org/).
 
+## [1.4.2] – 2026-10-13
+
+### Added
+- eM Client is back in the list (Communication)
+
 ## [1.4.1] – 2026-10-13
 
 Fixes from the first real run on a freshly installed laptop.
@@ -62,6 +67,7 @@ Fixes from the first real run on a freshly installed laptop.
 - German and English user interface, switchable at runtime
 - Test mode (`/test`)
 
+[1.4.2]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.2
 [1.4.1]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.1
 [1.4.0]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.0
 [1.3.0]: https://github.com/Floki89/FreshWin/releases/tag/v1.3.0

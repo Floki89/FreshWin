@@ -45,7 +45,7 @@ Prefer a file? **[Download FreshWin.bat](https://github.com/Floki89/FreshWin/rel
 ## Features
 
 **Programs**
-- 77 programs in 11 categories, installed silently via [winget](https://learn.microsoft.com/windows/package-manager/winget/) – including Microsoft Store apps
+- 78 programs in 11 categories, installed silently via [winget](https://learn.microsoft.com/windows/package-manager/winget/) – including Microsoft Store apps
 - Profiles **Gaming PC** and **Office PC** select suitable programs with one click
 - Search box, live count of selected programs, programs that are already installed are marked
 - Browser of your choice (Firefox, Chrome, Brave, Vivaldi or Edge), optionally as the default browser

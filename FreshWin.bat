@@ -41,7 +41,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
 $AppName    = 'FreshWin'
 $RepoUrl    = 'https://github.com/Floki89/FreshWin'
-$AppVersion = '1.4.1'
+$AppVersion = '1.4.2'
 $SetupFile  = $env:SETUP_FILE
 $ArgLine    = [string]$env:SETUP_ARGS
 $DryRun     = ($ArgLine -match '(^|\s)[/-]test(\s|$)') -or
@@ -509,6 +509,7 @@ $AppCatalog = [ordered]@{
     )
     catComm = @(
         @{ Name = 'Thunderbird';         Id = 'Mozilla.Thunderbird'; IdDe = 'Mozilla.Thunderbird.de'; Def = $false; De = 'E-Mail-Client'; En = 'email client' }
+        @{ Name = 'eM Client';           Id = 'eMClient.eMClient';                  Def = $false; De = 'E-Mail & Kalender';          En = 'email & calendar' }
         @{ Name = 'WhatsApp';            Id = '9NKSQGP7F2NH'; Source = 'msstore';   Def = $false; De = 'Messenger (Store)';          En = 'messenger (Store)' }
         @{ Name = 'Signal';              Id = 'OpenWhisperSystems.Signal';          Def = $false; De = 'Messenger';                  En = 'messenger' }
         @{ Name = 'Telegram';            Id = 'Telegram.TelegramDesktop';           Def = $false; De = 'Messenger';                  En = 'messenger' }

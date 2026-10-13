@@ -45,7 +45,7 @@ Lieber eine Datei? **[FreshWin.bat herunterladen](https://github.com/Floki89/Fre
 ## Funktionen
 
 **Programme**
-- 77 Programme in 11 Kategorien, still installiert über [winget](https://learn.microsoft.com/de-de/windows/package-manager/winget/) – auch Apps aus dem Microsoft Store
+- 78 Programme in 11 Kategorien, still installiert über [winget](https://learn.microsoft.com/de-de/windows/package-manager/winget/) – auch Apps aus dem Microsoft Store
 - Profile **Gaming-PC** und **Büro-PC** haken passende Programme mit einem Klick an
 - Suchfeld, Anzahl der ausgewählten Programme, bereits installierte Programme werden markiert
 - Browser nach Wahl (Firefox, Chrome, Brave, Vivaldi oder Edge), auf Wunsch als Standardbrowser
