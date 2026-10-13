@@ -41,7 +41,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
 $AppName    = 'FreshWin'
 $RepoUrl    = 'https://github.com/Floki89/FreshWin'
-$AppVersion = '1.4.3'
+$AppVersion = '1.4.4'
 $SetupFile  = $env:SETUP_FILE
 $ArgLine    = [string]$env:SETUP_ARGS
 $DryRun     = ($ArgLine -match '(^|\s)[/-]test(\s|$)') -or
@@ -103,6 +103,7 @@ de = @{
     btnCancel      = 'Abbrechen';      btnBack  = '< Zurück';   btnNext   = 'Weiter >'
     btnStart       = 'Jetzt starten';  btnStartTest = 'Test starten'
     btnRunning     = 'Läuft …'
+    logInstallCert = '  [!] Zertifikatsfehler der Store-Quelle (veraltetes winget) – die App bitte über den Microsoft Store installieren.'
     logAppxPartial = '  - {0} : für diesen Benutzer entfernt, für neue Benutzer nicht ({1})'
     logAppxFailed  = '  [!] {0} : nicht entfernt – {1}'
     logUpgradeAgain = '  winget wurde unterbrochen (z. B. weil es sich selbst aktualisiert hat) – zweiter Versuch …'
@@ -295,6 +296,7 @@ en = @{
     btnCancel      = 'Cancel';         btnBack  = '< Back';     btnNext   = 'Next >'
     btnStart       = 'Start now';      btnStartTest = 'Start test'
     btnRunning     = 'Running …'
+    logInstallCert = '  [!] Certificate error of the Store source (outdated winget) – please install the app from the Microsoft Store.'
     logAppxPartial = '  - {0} : removed for this user, not for new users ({1})'
     logAppxFailed  = '  [!] {0} : not removed – {1}'
     logUpgradeAgain = '  winget was interrupted (e.g. because it updated itself) – second attempt …'
@@ -758,9 +760,12 @@ $InstallTimeoutMin = 30
 function Install-App($a) {
     $id = Get-AppId $a
     Log (T 'logInstall' $a.Name $id)
-    $chk = Run-Proc 'winget' "list --id $id -e --accept-source-agreements" -Always
+    # Always name the source: otherwise winget also queries the Store source, and older winget versions
+    # fail there with a certificate error (0x8A15005E) - for every program, not just Store apps
+    $srcName = 'winget'; if ($a.Source) { $srcName = $a.Source }
+    $src = " --source $srcName"
+    $chk = Run-Proc 'winget' "list --id $id -e$src --accept-source-agreements" -Always
     if ($chk -eq 0) { Log (T 'logSkipInstalled'); return }
-    $src = ''; if ($a.Source) { $src = " --source $($a.Source)" }
     for ($try = 1; $try -le 3; $try++) {
         $rc = Run-Proc 'winget' "install --id $id -e$src --silent --accept-package-agreements --accept-source-agreements --disable-interactivity" -TimeoutMin $InstallTimeoutMin
         if ($rc -eq 0) { if (-not $DryRun) { Log '  OK' }; return }
@@ -773,6 +778,7 @@ function Install-App($a) {
         if ($hex -eq '0x8A150102' -and $try -lt 3) { Log (T 'logInstallBusy' $try); Wait-UI 60; continue }  # another install running
         if ($hex -eq '0x8A150056') { Log (T 'logInstallNoAdmin') }                                         # refuses admin context
         elseif ($hex -eq '0x8A15010A') { Log (T 'logInstallRebootFirst'); $script:RebootNeeded = $true }   # reboot required first
+        elseif ($hex -eq '0x8A15005E') { Log (T 'logInstallCert') }                                          # pinned certificate mismatch
         else { Log (T 'logInstallErr' $hex) }
         break
     }
@@ -1519,13 +1525,18 @@ function Invoke-Setup {
             if ($script:LastOutput -match 'v?(\d+\.\d+)') { $wgVer = [version]$Matches[1] }
             Log (T 'logWingetVer' $wgVer)
         }
-        if ($wgVer -lt [version]'1.6' -and -not $DryRun) {
+        # Older than 1.11: Store source certificate errors (0x8A15005E) and missing options
+        if ($wgVer -lt [version]'1.11' -and -not $DryRun) {
             Log (T 'logWingetUpd')
             $pkg = Join-Path $env:TEMP 'AppInstaller.msixbundle'
             $rc = Run-Proc 'curl.exe' "-L -f -s -S --max-time 600 -o `"$pkg`" https://aka.ms/getwinget" -TimeoutMin 12
             if ($rc -eq 0) {
                 try { Add-AppxPackage -Path $pkg -ForceApplicationShutdown -ErrorAction Stop } catch { Log "  [!] $($_.Exception.Message)" }
                 Wait-UI 5
+                if (Test-Winget) {
+                    Run-Proc 'winget' '--version' -Always | Out-Null
+                    if ($script:LastOutput -match 'v?(\d+\.\d+)') { Log (T 'logWingetVer' $Matches[1]) }
+                }
             }
             Remove-Item -LiteralPath $pkg -Force -ErrorAction SilentlyContinue
         }
@@ -1711,7 +1722,7 @@ function Invoke-Setup {
             Log (T 'logUpgradeTest')
         } else {
             Log (T 'logUpgrade')
-            $upArgs = 'upgrade --all --silent --accept-package-agreements --accept-source-agreements --disable-interactivity'
+            $upArgs = 'upgrade --all --source winget --silent --accept-package-agreements --accept-source-agreements --disable-interactivity'
             $rc = Run-Proc 'winget' $upArgs -TimeoutMin 60
             # E_ABORT: winget was ended, typically because App Installer (winget itself) was updated
             if ((Format-Code $rc) -eq '0x80004004') {

@@ -2,6 +2,14 @@
 
 All notable changes to FreshWin. Versions follow [semantic versioning](https://semver.org/).
 
+## [1.4.4] – 2026-10-13
+
+### Fixed
+- With older winget versions (e.g. 1.9) every installation failed with `0x8A15005E` (certificate error of the
+  Microsoft Store source). FreshWin now always names the source (`winget` or `msstore`), so only Store apps
+  depend on the Store source
+- winget older than 1.11 is updated automatically before installing; clear message for the certificate error
+
 ## [1.4.3] – 2026-10-13
 
 ### Fixed
@@ -73,6 +81,7 @@ Fixes from the first real run on a freshly installed laptop.
 - German and English user interface, switchable at runtime
 - Test mode (`/test`)
 
+[1.4.4]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.4
 [1.4.3]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.3
 [1.4.2]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.2
 [1.4.1]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.1
