@@ -71,7 +71,7 @@ Lieber eine Datei? **[FreshWin.bat herunterladen](https://github.com/Floki89/Fre
 - Verhindert den Energiesparmodus, wartet nach der ersten Anmeldung auf winget, versucht es erneut, wenn
   Windows Update gerade installiert, überspringt hängende Installer
 - Warnt bei fehlendem Internet, Akkubetrieb oder fremdem Adminkonto
-- Kein Konsolenfenster, das man versehentlich schließen könnte; ausführliche Logdatei
+- Ausführliche Logdatei; das Konsolenfenster bleibt minimiert im Hintergrund
 - Deutsch und Englisch, automatisch erkannt und jederzeit umschaltbar
 
 ## Screenshots

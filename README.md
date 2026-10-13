@@ -71,7 +71,7 @@ Prefer a file? **[Download FreshWin.bat](https://github.com/Floki89/FreshWin/rel
 - Keeps the PC awake, waits for winget after the first sign-in, retries while Windows Update is busy,
   skips installers that hang
 - Warns about missing internet, battery power or a different admin account
-- No console window that could be closed by accident; detailed log file
+- Detailed log file; the console window stays minimized in the background
 - German and English, detected automatically and switchable at any time
 
 ## Screenshots

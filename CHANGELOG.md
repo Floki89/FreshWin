@@ -2,6 +2,13 @@
 
 All notable changes to FreshWin. Versions follow [semantic versioning](https://semver.org/).
 
+## [1.4.5] – 2026-10-13
+
+### Fixed
+- FreshWin did not start after the admin prompt: Microsoft Defender flagged the hidden start
+  (`conhost.exe --headless powershell …`) as *Trojan:Win32/Commando.A!ml* and blocked it. FreshWin now starts
+  in a normal, minimized PowerShell window, which Defender does not flag
+
 ## [1.4.4] – 2026-10-13
 
 ### Fixed
@@ -81,6 +88,7 @@ Fixes from the first real run on a freshly installed laptop.
 - German and English user interface, switchable at runtime
 - Test mode (`/test`)
 
+[1.4.5]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.5
 [1.4.4]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.4
 [1.4.3]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.3
 [1.4.2]: https://github.com/Floki89/FreshWin/releases/tag/v1.4.2

@@ -16,8 +16,9 @@ if errorlevel 1 (
     exit /b
 )
 :start
-:: Run without a console window, so nobody can close it by accident and abort the setup
-start "" conhost.exe --headless powershell -NoProfile -STA -ExecutionPolicy Bypass -Command "iex ([IO.File]::ReadAllText($env:SETUP_FILE))"
+:: PowerShell window starts minimized. Do not hide it completely (conhost --headless):
+:: Microsoft Defender flags that as suspicious (Trojan:Win32/Commando.A!ml) and blocks the start.
+start "FreshWin" /min powershell -NoProfile -STA -ExecutionPolicy Bypass -Command "iex ([IO.File]::ReadAllText($env:SETUP_FILE))"
 exit /b
 #>
 # ================================================================
@@ -41,7 +42,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
 $AppName    = 'FreshWin'
 $RepoUrl    = 'https://github.com/Floki89/FreshWin'
-$AppVersion = '1.4.4'
+$AppVersion = '1.4.5'
 $SetupFile  = $env:SETUP_FILE
 $ArgLine    = [string]$env:SETUP_ARGS
 $DryRun     = ($ArgLine -match '(^|\s)[/-]test(\s|$)') -or
@@ -458,8 +459,9 @@ if (-not $DryRun -and -not $IsAdmin) {
     [System.Windows.Forms.MessageBox]::Show((T 'needAdmin'), $AppName, 'OK', 'Error') | Out-Null
     return
 }
-# Started via "irm ... | iex" in a terminal: that window must stay open
-if (-not $SetupFile) { Write-Host (T 'consoleHint') -ForegroundColor Yellow }
+# The console window (minimized, or the terminal for "irm ... | iex") must stay open
+try { $Host.UI.RawUI.WindowTitle = "$AppName - " + (T 'consoleHint') } catch {}
+Write-Host (T 'consoleHint') -ForegroundColor Yellow
 
 # --- Log file next to the script (or on the desktop when started via irm), otherwise in TEMP ---
 $suffix = ''
