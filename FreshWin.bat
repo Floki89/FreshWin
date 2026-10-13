@@ -41,7 +41,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
 $AppName    = 'FreshWin'
 $RepoUrl    = 'https://github.com/Floki89/FreshWin'
-$AppVersion = '1.4.2'
+$AppVersion = '1.4.3'
 $SetupFile  = $env:SETUP_FILE
 $ArgLine    = [string]$env:SETUP_ARGS
 $DryRun     = ($ArgLine -match '(^|\s)[/-]test(\s|$)') -or
@@ -68,7 +68,8 @@ de = @{
     warnOtherUser  = 'FreshWin läuft mit dem Konto {0}, angemeldet ist aber {1}. Programme, die nur für einen Benutzer installiert werden (z. B. Discord, WhatsApp), und die Darstellungs-Einstellungen landen beim Konto {0}.'
     drivers        = 'Treiber-Updates einschließen (empfohlen bei frisch installierten PCs)'
     sumDrivers     = 'inkl. Treiber'
-    logAwake       = 'Energiesparmodus ist während des Setups blockiert.'
+    logAwake       = 'PC und Bildschirm bleiben während des Setups an. Laptop-Deckel bitte nicht schließen.'
+    logAwakeFail   = '  [!] Energiesparmodus konnte nicht blockiert werden – bitte darauf achten, dass der PC nicht einschläft.'
     logWingetWait  = '  winget ist noch nicht bereit – warte bis zu 3 Minuten (normal nach der Ersteinrichtung) …'
     logWingetVer   = '  winget {0}'
     logWingetUpd   = '  Aktualisiere den App-Installer (winget) …'
@@ -259,7 +260,8 @@ en = @{
     warnOtherUser  = 'FreshWin is running as {0}, but {1} is signed in. Programs installed per user (e.g. Discord, WhatsApp) and the appearance settings will go to the account {0}.'
     drivers        = 'Include driver updates (recommended for freshly installed PCs)'
     sumDrivers     = 'incl. drivers'
-    logAwake       = 'Sleep is blocked while setup is running.'
+    logAwake       = 'PC and display stay on while setup is running. Please do not close the laptop lid.'
+    logAwakeFail   = '  [!] Sleep could not be blocked – please make sure the PC does not go to sleep.'
     logWingetWait  = '  winget is not ready yet – waiting up to 3 minutes (normal right after first setup) …'
     logWingetVer   = '  winget {0}'
     logWingetUpd   = '  Updating App Installer (winget) …'
@@ -668,10 +670,11 @@ function Log([string]$msg) {
 try {
     Add-Type -Namespace FreshWin -Name Power -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint esFlags);'
 } catch {}
+# Returns $true if Windows accepted the request
 function Set-KeepAwake([bool]$on) {
-    # ES_CONTINUOUS | ES_SYSTEM_REQUIRED, or ES_CONTINUOUS alone to release
-    $flags = [uint32]2147483648; if ($on) { $flags = [uint32]2147483649 }
-    try { [void][FreshWin.Power]::SetThreadExecutionState($flags) } catch {}
+    # ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED, or ES_CONTINUOUS alone to release
+    $flags = [uint32]2147483648; if ($on) { $flags = [uint32]2147483651 }
+    try { return ([FreshWin.Power]::SetThreadExecutionState($flags) -ne 0) } catch { return $false }
 }
 
 # Wait without freezing the window
@@ -1466,8 +1469,7 @@ function Invoke-Setup {
     Log "===== $AppName $AppVersion $mode ====="
     Log (T 'logUser' "$env:USERDOMAIN\$env:USERNAME" $IsAdmin $script:LogFile)
     $script:RebootNeeded = $false
-    Set-KeepAwake $true
-    Log (T 'logAwake')
+    if (Set-KeepAwake $true) { Log (T 'logAwake') } else { Log (T 'logAwakeFail') }
     if ($script:AutoMode) {
         Log (T 'logAuto')
         foreach ($w in (Get-Warnings)) { Log "  [!] $w" }
@@ -1780,7 +1782,7 @@ try {
     }
     if ($script:RebootNeeded) { Log (T 'logRunAgain') }
     Log (T 'logFile' $script:LogFile)
-    Set-KeepAwake $false
+    [void](Set-KeepAwake $false)
 
     if ($s.LookAny -or $o.Explorer -or $o.Ads) {
         Log (T 'logExplorer')
